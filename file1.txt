@@ -11,3 +11,5 @@ GuessTheNumber:
 GuessingLogic.compare(secret, guess) (TOO_SMALL / TOO_BIG / CORRECT).
 
 Runner hosts the interactive loop (Scanner), counts attempts.
+
+Added line1
