@@ -108,6 +108,14 @@ input, select, textarea{
   width:100%; padding:.65rem .75rem; border-radius:10px; border:1px solid var(--border); background:#fff; font: inherit;
 }
 textarea{ min-height: 120px; resize: vertical; }
+.donation-card .swish-qr{
+    display: block;
+    max-width: 250px;
+    height: auto;
+    margin: 0.5rem auto 0;
+    border-radius: 12px ;
+    box-shadow: 0 6px 18px rgba(0,0,0,12);
+}
 
 /* ============================
    Footer
