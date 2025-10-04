@@ -50,6 +50,27 @@ body{
   padding: 1rem 1.1rem;
 }
 
+.event-card { overflow: hidden; }
+.card-img { width:100%; aspect-ratio:16/11; object-fit:cover; display:block; }
+.card-title-link { text-decoration:none; color:inherit; }
+.card-title-link:hover { text-decoration:underline; }
+.cta-hint { color: var(--muted); margin:.25rem 0 .75rem; }
+.card-media{
+  margin: -2rem -1.1rem .75rem; /* cancels the card padding you set */
+
+  overflow: hidden;
+  width: auto;
+  height: auto;
+}
+/* Nice hover focus */
+.card:hover .card-img { transform: scale(1.02); transition: transform .2s ease; }
+.card a:focus-visible { outline:2px solid var(--blue); outline-offset:2px; border-radius:10px; }
+.card-media .card-img{ border-radius: 0; }
+
+/* Smooth scroll & sticky header offset */
+html { scroll-behavior:smooth; }
+#tickets { scroll-margin-top: 90px; }
+
 /* ============================
    Header & navigering
    ============================ */
@@ -147,6 +168,33 @@ body{
 .event-meta{ color: var(--muted); font-size:.95rem; margin:.25rem 0 .5rem; }
 .tag{ display:inline-block; padding:.2rem .5rem; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:700; font-size:.8rem; }
 
+/* ============================
+  Evenemangsbiljetter
+   ============================ */
+/* Ticket form styled like your other card form */
+.ticket-form{ display:grid; gap:1rem; }
+.ticket-form .form-grid{
+  display:grid;
+  gap: .75rem 1rem;
+  grid-template-columns: repeat(2, 1fr);
+}
+.ticket-form label{ display:grid; gap:.35rem; font-weight:600; font-size:.95rem; }
+
+/* keep controls consistent with your global input/select/textarea rules */
+
+.ticket-form .form-actions{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  margin-top:.25rem;
+}
+.ticket-form .btn{ width:auto; }          /* prevent the full-width red bar */
+.ticket-form .small{ font-size:.9rem; margin:0; }
+
+/* Stack on small screens */
+@media (max-width: 760px){
+  .ticket-form .form-grid{ grid-template-columns: 1fr; }
+}
 /* ============================
    Medlemskap & Kontakt
    ============================ */

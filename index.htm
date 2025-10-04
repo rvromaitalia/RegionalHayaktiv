@@ -106,15 +106,19 @@
                 <div class="cards">
                     <article class="card">
                         <h3>Harisa-kväll & Gemenskap</h3>
-                        <p class="event-meta">Lör 26 okt • Mölndal</p>
+                        <p class="event-meta">Lör 27 sept • Mölndal</p>
                         <p>Mat, musik och samtal. Ta gärna med en vän.</p>
                         <span class="tag">Öppet för alla</span>
                     </article>
-                    <article class="card">
-                        <h3>Språk & Kultur – ungdom</h3>
-                        <p class="event-meta">Ons 6 nov • Göteborg</p>
-                        <p>Armeniska för nybörjare, lekar och fika.</p>
-                        <span class="tag">Ungdom</span>
+                    <article class="card event card">
+                        <a href="#tickets">
+                            <img class = "card-img" src="./images/Facebook Post - Darkness, Light and ChatGPT2.png" alt="Vardan Petrosyan på scen i Göteborg"
+                            loading="lazy">
+                        </a>
+                        <h3><a class="card-title-link" href="#tickets">Vardan Petrosyan i Göteborg</a></h3>
+                        <p class="event-meta">Lör 8 nov · 18:00 · Kulturhuset Möllan, Mölndal</p>
+                        <p class="muted cta-hint">Klicka på bilden eller knappen för att boka biljetter.</p>
+                        <a class="btn btn-primary" href="#tickets">Köp biljetter</a>
                     </article>
                     <article class="card">
                         <h3>Välgörenhetsinsamling</h3>
@@ -239,6 +243,45 @@
                              loading="lazy">
                     </div>
                 </div>
+            </div>
+        </section>
+        <!-- ============== Evenemangsbiljetter ============== -->
+        <section id="tickets" class="section">
+            <div class="container">
+                <h2 class="section-title">Evenemangsbiljetter</h2>
+        
+                <article class="card">
+                    <form class="ticket-form" action="https://formspree.io/f/xeorkwnb" method="POST">
+                        <input type="hidden" name="_subject" value="Biljettbokning – Vardan Petrosyan 8/11">
+                        <div class="form-grid">
+                            <label>Namn
+                                <input name="name" placeholder="ex. Karen Karapetyan" required>
+                            </label>
+                            <label>E-post
+                                <input type="email" name="email" placeholder="ex. namn@example.com" required>
+                            </label>
+                            <label>Mobil
+                                <input name="phone" placeholder="ex. +46 70 123 45 67">
+                            </label>
+                            <label>Antal
+                                <input type="number" name="qty" min="1" value="1" required>
+                            </label>
+                            <label>Biljettyp
+                                <select name="type">
+                                    <option>Ordinarie (500 kr)</option>
+                                </select>
+                            </label>
+                            <label>Meddelande
+                                <textarea name="note" placeholder="Ev. önskemål eller referens (t.ex. Vardan-2)."></textarea>
+                            </label>
+                        </div>
+        
+                        <div class="form-actions">
+                            <button class="btn btn-primary" type="submit">Boka biljetter</button>
+                            <p class="muted small">Betalning sker efter bekräftelse (Swish: 123 404 81 79).</p>
+                        </div>
+                    </form>
+                </article>
             </div>
         </section>
 
