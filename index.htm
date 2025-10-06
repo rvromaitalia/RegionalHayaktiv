@@ -28,7 +28,9 @@
   <meta property="og:site_name" content="Regional Hayaktiv">
   <meta property="og:locale" content="sv_SE">
 
-  <link rel="stylesheet" href="hem.css">
+  <link rel="stylesheet" href="./assets/css/site.css">
+  <script src="/assets/js/tickets.js" defer></script>
+  <img src="/images/swish-qr-720.png" ...>
 </head>
 
 <body>
@@ -225,8 +227,9 @@
                             <input type="text" name="_gotcha" style="display:none"> <!-- honeypot anti-spam -->
                             <!-- Redirect to a custom thank-you page (create it first, or remove this line) -->
                             <!-- <input type="hidden" name="_redirect" value="https://rvromaitalia.github.io/RegionalHayaktiv/thanks.html"> -->
-
-                            <button class="btn btn-primary" type="submit">Skicka</button>
+                            <div class = "form-actions"> 
+                                <button class="btn btn-primary" type="submit">Skicka</button>
+                            </div>
                         </form>
                     </div>
                     <div class="card donation-card">
@@ -245,46 +248,83 @@
                 </div>
             </div>
         </section>
+
+
         <!-- ============== Evenemangsbiljetter ============== -->
         <section id="tickets" class="section">
             <div class="container">
                 <h2 class="section-title">Evenemangsbiljetter</h2>
         
                 <article class="card">
-                    <form class="ticket-form" action="https://formspree.io/f/xeorkwnb" method="POST">
+                    <form class="ticket-form" action="https://formspree.io/f/xeorkwnb" method="POST" novalidate>
                         <input type="hidden" name="_subject" value="Biljettbokning – Vardan Petrosyan 8/11">
+        
                         <div class="form-grid">
                             <label>Namn
-                                <input name="name" placeholder="ex. Karen Karapetyan" required>
+                                <input name="name" placeholder="ex. Karen Karapetyan" autocomplete="name" required>
                             </label>
+        
                             <label>E-post
-                                <input type="email" name="email" placeholder="ex. namn@example.com" required>
+                                <input type="email" name="email" placeholder="ex. namn@example.com" autocomplete="email"
+                                    spellcheck="false" required>
                             </label>
+        
                             <label>Mobil
-                                <input name="phone" placeholder="ex. +46 70 123 45 67">
+                                <input name="phone" placeholder="ex. +46 70 123 45 67" autocomplete="tel" inputmode="tel">
                             </label>
+        
                             <label>Antal
                                 <input type="number" name="qty" min="1" value="1" required>
                             </label>
+        
                             <label>Biljettyp
-                                <select name="type">
-                                    <option>Ordinarie (500 kr)</option>
+                                <select name="type" required>
+                                    <option value="ordinarie">Ordinarie (500 kr)</option>
                                 </select>
                             </label>
+        
                             <label>Meddelande
-                                <textarea name="note" placeholder="Ev. önskemål eller referens (t.ex. Vardan-2)."></textarea>
+                                <textarea name="note" placeholder="Ev. önskemål eller referens (t.ex. Vardan-2)."
+                                    spellcheck="true"></textarea>
                             </label>
                         </div>
         
-                        <div class="form-actions">
-                            <button class="btn btn-primary" type="submit">Boka biljetter</button>
+                        <!-- Actions -->
+                        <div class="form-actions" style="display:flex;align-items:center;gap:.75rem;margin-top:1rem;">
+                            <input type="hidden" name="action" value="buy">
+                            <button id="buyBtn" class="btn btn-primary" type="button">Köp biljetter</button>
                             <p class="muted small">Betalning sker efter bekräftelse (Swish: 123 404 81 79).</p>
+                        </div>
+        
+                        <!-- Swish fallback modal -->
+                        <div id="swishModal" class="modal" hidden>
+                            <div class="modal-card">
+                                <h3>Betala med Swish</h3>
+                                <ol>
+                                    <li>Öppna Swish-appen</li>
+                                    <li>Swisha till: <strong>123 404 81 79</strong></li>
+                                    <li>Belopp: <strong>500 kr</strong></li>
+                                    <li>Meddelande: <strong>Vardan 8/11 – <span id="qtyOut">1</span> biljetter</strong></li>
+                                </ol>
+        
+                                <!-- Responsive QR image (export a cropped/optimized file; remove the space in filename) -->
+                                <img class="swish-qr" src="/images/swish-qr-720 .png" srcset="/images/swish-qr-480.png 480w,
+                                        /images/swish-qr-720.png 720w,
+                                        /images/swish-qr-1080.png 1080w" sizes="(max-width: 600px) 90vw, 360px"
+                                    alt="Swish QR-kod" loading="lazy" decoding="async">
+        
+                                <div class="modal-actions">
+                                    <a class="btn btn-primary" href="swish://">Öppna Swish-appen</a>
+                                    <button class="btn btn-outline" id="closeModal" type="button">Stäng</button>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </article>
+        
             </div>
         </section>
-
+        
         <!-- ============== Kontakt ============== -->
         <section id="contact" class="section">
             <div class="container">
@@ -292,43 +332,40 @@
                 <div class="cards">
                     <div class="card">
                         <h3>Kontaktuppgifter</h3>
-                        <p><strong>E-post:</strong> <a
-                                href="mailto:">styrelsen.regionalhayaktiv@gmail.com</a></p>
+                        <p><strong>E-post:</strong> <a href="mailto:">styrelsen.regionalhayaktiv@gmail.com</a></p>
                         <p><strong>Ordförande: Anait Palm</strong> <span title="CEO-mobil">070 5741514</p>
-                        <p><strong>Kassör: Nara Lazaryan</strong>  <span title = "kassor-mobil">076 5551600</span>
-                        </span></p>
+                        <p><strong>Kassör: Nara Lazaryan</strong> <span title="kassor-mobil">076 5551600</span>
+                            </span></p>
                         <p class="muted">Lägg gärna till Facebook/Instagram-länkar här.</p>
                     </div>
                     <div class="card">
                         <h3>Meddelande</h3>
-                        <form id="contact-form"
-                            action="https://formspree.io/f/movkwzrg"
-                            method="POST">
-                        <div>
-                            <label for="msg-name">Namn</label>
-                            <input id="msg-name" name="name" required autocomplete="name" />
-                        </div>
-
-                        <div>
-                            <label for="msg-email">E-post</label>
-                            <input id="msg-email" name="email" type="email" required autocomplete="email" />
-                        </div>
-                        
-                        <div>
-                            <label for="msg-mobil">mobil</label>
-                            <input id="msg-mobil" name="mobil" type="mobil" required autocomplete="email" />
-                        </div>
-                        <div>
-                            <label for="msg-text">Meddelande</label>
-                            <textarea id="msg-text" name="message" required></textarea>
-                        </div>
-
-                        <!-- Optional extras -->
-                        <input type="hidden" name="_subject" value="Nytt meddelande via webb – Regional Hayaktiv">
-                        <input type="text" name="_gotcha" style="display:none"> <!-- honeypot anti-spam -->
-                        <!-- <input type="hidden" name="_redirect" value="https://rvromaitalia.github.io/RegionalHayaktiv/thanks.html"> -->
-
-                        <button class="btn btn-primary" type="submit">Skicka</button>
+                        <form id="contact-form" action="https://formspree.io/f/movkwzrg" method="POST">
+                            <div>
+                                <label for="msg-name">Namn</label>
+                                <input id="msg-name" name="name" required autocomplete="name" />
+                            </div>
+        
+                            <div>
+                                <label for="msg-email">E-post</label>
+                                <input id="msg-email" name="email" type="email" required autocomplete="email" />
+                            </div>
+        
+                            <div>
+                                <label for="msg-mobil">mobil</label>
+                                <input id="msg-mobil" name="mobil" type="mobil" required autocomplete="email" />
+                            </div>
+                            <div>
+                                <label for="msg-text">Meddelande</label>
+                                <textarea id="msg-text" name="message" required></textarea>
+                            </div>
+        
+                            <!-- Optional extras -->
+                            <input type="hidden" name="_subject" value="Nytt meddelande via webb – Regional Hayaktiv">
+                            <input type="text" name="_gotcha" style="display:none"> <!-- honeypot anti-spam -->
+                            <!-- <input type="hidden" name="_redirect" value="https://rvromaitalia.github.io/RegionalHayaktiv/thanks.html"> -->
+        
+                            <button class="btn btn-primary" type="submit">Skicka</button>
                         </form>
                     </div>
                 </div>
