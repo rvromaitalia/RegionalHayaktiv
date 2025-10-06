@@ -1,55 +1,34 @@
-(() => {
-  const form = document.querySelector('form.ticket-form');
-  if (!form) return;
-
+// /assets/js/swish.js
+(function () {
   const buyBtn = document.getElementById('buyBtn');
   const modal  = document.getElementById('swishModal');
-  const closeModal = document.getElementById('closeModal');
-  const qtyInput = form.querySelector('input[name="qty"]');
-  const qtyOut   = document.getElementById('qtyOut');
-  const endpoint = form.getAttribute('action');
 
-  const isMobile = () => /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isMobile = /iphone|ipad|ipod|android/i.test(navigator.userAgent);
 
-  async function submitFormspree(){
-    try{
-      const fd = new FormData(form);
-      await fetch(endpoint, {
-        method:'POST',
-        headers:{ 'Accept':'application/json' },
-        body: fd
-      });
-    }catch(e){
-      console.error(e);
-    }
+  function openModal() { modal?.removeAttribute('hidden'); }
+  function tryOpenSwish() {
+    // This works reliably only if you have a token from Swish m-commerce:
+    // const url = `swish://paymentrequest?token=${encodeURIComponent(TOKEN)}&callbackurl=${encodeURIComponent('https://your.site/thanks')}`;
+    // Temporary best-effort (may do nothing on many browsers):
+    const url = 'swish://';
+    window.location.href = url;
   }
 
-  function openSwishOrFallback(){
-    if(!form.reportValidity()) return;
-
-    if(qtyOut) qtyOut.textContent = qtyInput?.value || '1';
-
-    // Send booking in background
-    submitFormspree();
-
-    if(isMobile()){
-      let opened = false;
-      const t = setTimeout(() => { if(!opened) modal.hidden = false; }, 900);
-
-      // Try to open the app (cannot prefill without Swish Handel)
-      window.location.href = 'swish://';
-
-      // If we switch away quickly, assume app opened
-      document.addEventListener('visibilitychange', () => {
-        if(document.hidden){ opened = true; clearTimeout(t); }
-      }, { once:true });
+  buyBtn?.addEventListener('click', () => {
+    if (isMobile) {
+      // Attempt to open app; fallback to modal after 1s
+      let fellBack = false;
+      const t = setTimeout(() => { fellBack = true; openModal(); }, 1000);
+      tryOpenSwish();
+      // if the app opens, the page typically goes to background; if not, modal appears
     } else {
-      // Desktop → show QR/instructions directly
-      modal.hidden = false;
+      // Desktop: always show QR fallback
+      openModal();
     }
-  }
+  });
 
-  buyBtn?.addEventListener('click', openSwishOrFallback);
-  closeModal?.addEventListener('click', () => modal.hidden = true);
-  modal?.addEventListener('click', e => { if(e.target === modal) modal.hidden = true; });
+  // Close button in your modal
+  document.getElementById('closeModal')?.addEventListener('click', () => {
+    modal?.setAttribute('hidden', '');
+  });
 })();
