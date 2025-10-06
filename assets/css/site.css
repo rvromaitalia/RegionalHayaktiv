@@ -1,46 +1,74 @@
 /* ============================
    Färger & grundvariabler
+   – Central theme tokens you can tweak to rebrand the site fast
    ============================ */
 :root{
-  --red:   #D90012;   /* Armeniens röd */
-  --blue:  #0033A0;   /* Armeniens blå */
-  --amber: #F2A800;   /* Armeniens orange */
-  --bg:    #f7f7f8;   /* ljus bakgrund */
-  --card:  #ffffff;
-  --text:  #1f2328;   /* mörk text */
-  --muted: #6b7280;
-  --border:#e5e7eb;
-  --shadow: 0 8px 30px rgba(0,0,0,.06);
-  --radius: 14px;
-  --maxw: 1100px;
-  --gap:  1.25rem;
+  --red:   #D90012;   /* primary brand red (buttons, highlights) */
+  --blue:  #0033A0;   /* accent blue (focus, links) */
+  --amber: #F2A800;   /* warm accent (tags/badges if needed) */
+
+  --bg:    #f7f7f8;   /* page background */
+  --card:  #ffffff;   /* card background */
+
+  --text:  #1f2328;   /* base body text */
+  --muted: #6b7280;   /* secondary text */
+
+  --border:#e5e7eb;   /* light borders/dividers */
+  --shadow: 0 8px 30px rgba(0,0,0,.06); /* soft card shadow */
+  --radius: 14px;     /* global rounded corners */
+
+  --maxw: 1100px;     /* site content max-width */
+  --gap:  1.25rem;    /* default grid gap */
 }
 
 /* ============================
    Bas
+   – Resets, layout frame, containers
    ============================ */
-*{box-sizing:border-box}
-html,body{height:100%}
+*{ box-sizing:border-box; }
+
+html, body{
+  height: 100%;        /* enables full-height layouts */
+  line-height: 1.6;    /* comfortable default line height */
+  margin: 0;
+
+  /* Safety net against accidental horizontal scroll.
+     Keep commented unless you still see sideways drag. */
+  /* overflow-x: hidden; */
+}
+
+/* Make all media responsive by default */
+img, video{
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
 body{
-  margin:0;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text);
   background: var(--bg);
-  line-height: 1.6;
+
+  /* Page skeleton: sticky header, flexible main, footer at bottom */
   display: grid;
-  grid-template-rows: auto 1fr auto; /* header | main | footer */
+  grid-template-rows: auto 1fr auto;
   min-height: 100vh;
 }
-.container{ max-width: var(--maxw); margin-inline:auto; padding-inline: 1rem; }
+
+.container{ max-width: var(--maxw); margin-inline: auto; padding-inline: 1rem; }
 .section{ padding-block: 2.5rem; }
 .section-title{ font-size: clamp(1.3rem, 1rem + 1.2vw, 2rem); margin: 0 0 .75rem; }
 .section-lead{ color: var(--muted); margin: 0 0 1.25rem; }
 
-.cards{ 
-  display:grid;
+/* ============================
+   Cards
+   – Generic card, media bleed, links
+   ============================ */
+.cards{
+  display: grid;
   gap: var(--gap);
   grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
- }
+}
 
 .card{
   background: var(--card);
@@ -56,11 +84,10 @@ body{
 .card-title-link:hover { text-decoration:underline; }
 .cta-hint { color: var(--muted); margin:.25rem 0 .75rem; }
 .card-media{
-  margin: -2rem -1.1rem .75rem; /* cancels the card padding you set */
-
+  /* Creates a “full-bleed” image by cancelling the card’s padding.
+     MUST match .card padding exactly to avoid horizontal overflow. */
+  margin: -1rem -1.1rem .75rem;
   overflow: hidden;
-  width: auto;
-  height: auto;
 }
 /* Nice hover focus */
 .card:hover .card-img { transform: scale(1.02); transition: transform .2s ease; }
@@ -153,7 +180,7 @@ html { scroll-behavior:smooth; }
 .hero h1{ font-size: clamp(1.6rem, 1.1rem + 2.2vw, 2.6rem); margin:0; line-height:1.2; }
 .hero p{ color: var(--muted); margin:.5rem 0 1rem; max-width: 70ch; }
 .actions{ display:flex; gap:.75rem; flex-wrap:wrap; }
-.btn{ appearance:none; border:0; cursor:pointer; font-weight:700; border-radius: 999px; padding:.7rem 1rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
+.btn{ appearance:none; border:0; cursor:pointer; font-weight:700; border-radius: 999px; padding:.8rem 1.25rem; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; }
 .btn-primary{ background: var(--red); color:#fff; }
 .btn-primary:hover{ filter: brightness(.95); }
 .btn-outline{ background:#fff; color:#111; border:1px solid var(--border); }
@@ -172,22 +199,8 @@ html { scroll-behavior:smooth; }
 /* ============================
   Evenemangsbiljetter
    ============================ */
-
-/* Remove this (it doesn't match your markup)
 #tickets .section { background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%); padding: 3rem 0; }
-*/
 
-/* Use this (matches <section id="tickets" class="section">) */
-#tickets.section {
-  background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 100%);
-  padding: 3rem 0;           /* let .container handle side padding */
-}
-#tickets .container { padding-inline: 1rem; }
-#tickets .card {
-  margin-block: .75rem 1.25rem;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(0,0,0,.05);
-}
 
 /* Ticket form layout */
 .ticket-form{ display:grid; gap:1rem; }
@@ -199,23 +212,40 @@ html { scroll-behavior:smooth; }
   grid-template-columns: repeat(2, 1fr);
 }
 
+/* Your existing label grid */
+/* Label: single source of spacing, no baseline quirks */
 .ticket-form label{
-  display:grid;
-  gap:.35rem;
-  font-weight:500;
-  font-size:.9rem;
-  color:#555;
-  line-height:1.2;
+  display: flex;
+  flex-direction: column;
+  row-gap: .35rem;
+  line-height: 1.2;
+  font-weight: 500;
+  font-size: .9rem;
+  color: #555;
+}
+
+/* Controls inside label: no stray margins/baselines */
+.ticket-form label > :is(input, select, textarea){
+  display: block;
+  margin: 0;
+}
+
+
+/* (optional) ensure the controls themselves don’t add extra “visual” space */
+.ticket-form :is(input, select, textarea){
+  box-sizing: border-box;
 }
 
 /* Unified control sizing */
 :root{ --control-h: 48px; }
 
-.ticket-form input[type="text"],
-.ticket-form input[type="email"],
-.ticket-form input[type="tel"],
-.ticket-form input[type="number"],
-.ticket-form select{
+.ticket-form :is(
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  select
+){
   box-sizing:border-box;
   width:100%;
   height:var(--control-h);
@@ -224,17 +254,53 @@ html { scroll-behavior:smooth; }
   border-radius:.5rem;
   font:inherit;
   color:inherit;
+  line-height:normal; /* helps some browsers */
 }
 
-/* Select look */
-.ticket-form select{
-  appearance:none;
+.ticket-form :is(input, select, textarea):focus-visible{
+  outline: none !important;                 /* no outside outline */
+  border-color: var(--blue) !important;     /* blue border on focus */
+  box-shadow: 0 0 0 2px rgba(0,51,160,.18) inset !important; /* INSIDE glow */
+}
+
+
+.ticket-form input[type="text"],
+.ticket-form input[type="email"],
+.ticket-form input[type="tel"],
+/* Chrome/Safari */
+.ticket-form input[type="number"]::-webkit-outer-spin-button,
+.ticket-form input[type="number"]::-webkit-inner-spin-button{
   -webkit-appearance:none;
-  -moz-appearance:none;
-  background-repeat:no-repeat;
-  background-position:right .75rem center;
-  background-size:.75rem;
-  padding-right:2rem;
+  margin:0;
+}
+/* Firefox */
+.ticket-form input[type="number"]{
+  -moz-appearance: textfield;
+}
+
+.ticket-form select{
+  /* base sizing */
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--control-h);
+  padding: 0 1rem;
+  padding-right: 2rem;              /* room for arrow */
+  margin: 0;
+  line-height: normal;
+
+  /* look & reset */
+  font: inherit;
+  color: inherit;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* arrow position (add a background-image if you use a custom chevron) */
+  background-repeat: no-repeat;
+  background-position: right .75rem center;
+  background-size: .75rem;
 }
 
 /* Textarea */
@@ -248,9 +314,6 @@ html { scroll-behavior:smooth; }
 }
 
 /* ---------- ACTION ROWS (fixes awkward buttons) ---------- */
-
-/* Base button */
-.btn{ padding:.8rem 1.25rem; border-radius:999px; font-weight:700; }
 
 /* Ticket form action row: button + note on one line, no stretching */
 .ticket-form .form-actions{
@@ -269,51 +332,10 @@ html { scroll-behavior:smooth; }
 /* Mobile stack */
 @media (max-width:760px){
   .ticket-form .form-grid{ grid-template-columns:1fr; }
-
   .ticket-form .form-actions{
-    flex-direction:column;
-    align-items:stretch;
-    gap:.5rem;
+    flex-direction:column; align-items:stretch; gap:.5rem;
   }
-  .ticket-form .form-actions .btn{ width:100%; }   /* good tap target */
-}
-
-/* ---------------- Swish modal styles ---------------- */
-.modal[hidden]{ display:none; }
-.modal{
-  position:fixed; inset:0; background:rgba(0,0,0,.45);
-  display:flex; align-items:center; justify-content:center;
-  padding:1rem; z-index:100;
-}
-.modal-card{
-  background:#fff; border-radius:16px;
-  padding:1.25rem 1.5rem; max-width:520px; width:100%;
-  box-shadow:0 12px 40px rgba(0,0,0,.18);
-}
-.modal-card h3{ margin:0 0 .5rem; }
-.modal-card ol{ margin:.5rem 0 1rem; }
-.modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
-
-.swish-qr{
-  display:block; width:100%; max-width:360px; height:auto;
-  margin:.5rem 0 1rem; border-radius:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
-}
-
-
-/* --- Responsive layout --- */
-@media (max-width: 760px) {
-  .ticket-form .form-grid {
-    grid-template-columns: 1fr;
-  }
-  .ticket-form .form-actions-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Stack on small screens */
-@media (max-width: 760px){
-  .ticket-form .form-grid{ grid-template-columns: 1fr; }
+  .ticket-form .form-actions .btn{ width:100%; }
 }
 
 /* Tickets section – stronger, visible background */
@@ -329,28 +351,6 @@ html { scroll-behavior:smooth; }
   margin-block: .75rem 1.25rem;  /* space so gradient shows */
   border-radius: 16px;
   box-shadow: 0 6px 20px rgba(0,0,0,.05);
-}
-
-/* ============================
-   Medlemskap & Kontakt
-   ============================ */
-form{ display:grid; gap:.75rem; }
-label{ font-weight:600; font-size:.95rem; }
-input, select, textarea{
-  width:100%; padding:.65rem .75rem; border-radius:10px; border:1px solid var(--border); background:#fff; font: inherit;
-}
-
-textarea{ 
-  min-height: 120px; resize: vertical;
-}
-
-.donation-card .swish-qr{
-    display: block;
-    max-width: 250px;
-    height: auto;
-    margin: 0.5rem auto 0;
-    border-radius: 12px ;
-    box-shadow: 0 6px 18px rgba(0,0,0,12);
 }
 
 /* ============================
@@ -375,15 +375,29 @@ textarea{
 .modal-card ol{ margin:.5rem 0 1rem; }
 .modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
 
+/* QR image inside modal (responsive, capped width) */
 .swish-qr{
   display:block; width:100%; max-width:360px; height:auto;
   margin:.5rem 0 1rem; border-radius:12px;
   box-shadow:0 6px 18px rgba(0,0,0,.08);
 }
 
-/* Optional: action row styling if not already in your CSS */
-.ticket-form .form-actions{
-  display:flex; align-items:center; gap:.75rem; margin-top:1rem;
+/* ============================
+   Medlemskap & Kontakt (global forms)
+   – If you want ticket form styles to win, keep this block ABOVE .ticket-form,
+     or scope it away from .ticket-form (e.g., form:not(.ticket-form){...})
+   ============================ */
+form{ display:grid; gap:.75rem; }
+label{ font-weight:600; font-size:.95rem; }
+input, select, textarea{
+  width:100%; padding:.65rem .75rem; border-radius:10px; border:1px solid var(--border); background:#fff; font: inherit;
+}
+textarea{ min-height: 120px; resize: vertical; }
+
+/* Donation card QR – smaller, centered */
+.donation-card .swish-qr{
+  display:block; max-width:250px; height:auto; margin:.5rem auto 0;
+  border-radius:12px; box-shadow:0 6px 18px rgba(0,0,0,.12);
 }
 
 /* ============================
