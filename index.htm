@@ -278,9 +278,13 @@
                             </label>
         
                             <label>Biljettyp
-                                <select name="type" required>
-                                    <option value="ordinarie">Ordinarie (500 kr)</option>
-                                </select>
+                                <label>Biljettyp
+                                    <select name="type" id="ticketType" required>
+                                        <option value="ordinarie" data-price="500">Ordinarie (500 kr)</option>
+                                        <!--<option value="ungdom" data-price="250">Ungdom (250 kr)</option>
+                                        <option value="barn" data-price="100">Barn (100 kr)</option>-->
+                                    </select>
+                                </label>
                             </label>
         
                             <label>Meddelande
@@ -299,7 +303,7 @@
                             
                             <div id="fallback" hidden>
                                 <p>Kunde inte öppna Swish automatiskt. Scanna QR-koden eller klicka på betalningslänken nedan.</p>
-                                <img src="./images/swish-qr-720.png" alt="Swish QR">
+                                <img src="./images/swish-qr-480.png" alt="Swish QR">
                                 <p><a id="fallbackLink" href="#" rel="noopener">Öppna betalning</a></p>
                             </div>
                             <p class="muted small">Betalning sker efter bekräftelse (Swish: 123 404 81 79).</p>
@@ -312,7 +316,8 @@
                                 <ol>
                                     <li>Öppna Swish-appen</li>
                                     <li>Swisha till: <strong>123 404 81 79</strong></li>
-                                    <li>Belopp: <strong>500 kr</strong></li>
+                                    <!-- ⬇️ total will be inserted here -->
+                                    <li>Belopp: <strong><span id="amountOut">0</span> kr</strong></li>
                                     <li>Meddelande: <strong>Vardan 8/11 – <span id="qtyOut">1</span> biljetter</strong></li>
                                 </ol>
                             
