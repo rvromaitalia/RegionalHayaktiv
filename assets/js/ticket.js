@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Inputs / outputs
   const typeSelect    = form?.querySelector('select[name="type"]');
   const qtyInput      = form?.querySelector('input[name="qty"]');
-  const qtyOut        = document.getElementById('qtyOut');
+  const nameInput     = form?.querySelector('input[name="name"]');
   const amountOut     = document.getElementById('amountOut');
+  const messageOut    = document.getElementById('messageOut');
+  const EVENT_LABEL   = 'Vardan Petrosyan';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
 
@@ -32,12 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const qty   = Math.max(1, parseInt(qtyInput?.value || '1', 10));
     const unit  = getUnitPriceSEK();
     const total = unit * qty;
-    if (qtyOut)    qtyOut.textContent    = String(qty);
+
     if (amountOut) amountOut.textContent = formatSEK(total);
+
+    if (messageOut) {
+      const name = (nameInput?.value || '').trim();
+      messageOut.textContent = name ? `${name} – ${EVENT_LABEL}` : EVENT_LABEL;
+    }
   }
 
-  function openModalInner() { modal?.removeAttribute('hidden'); }
-  function openModal()       { updateAmounts(); openModalInner(); }
+  function openModal()       { updateAmounts(); modal?.removeAttribute('hidden'); }
   function closeModal()      { modal?.setAttribute('hidden', ''); }
 
   function tryOpenSwish() {
@@ -63,9 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
     openSwishBtn.addEventListener('click', e => e.preventDefault());
   }
 
-  // Live updates if user changes type/qty
+  // Live updates when user edits fields
   typeSelect?.addEventListener('change', updateAmounts);
   qtyInput?.addEventListener('input', updateAmounts);
+  nameInput?.addEventListener('input', updateAmounts);  // <-- added
 
   // (Optional) QR diagnostics
   qrImg?.addEventListener('error', () => console.warn('QR image failed:', qrImg.currentSrc));
@@ -112,6 +119,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initialize totals on load
+  // Initialize on load
   updateAmounts();
 });
