@@ -313,6 +313,11 @@ html { scroll-behavior:smooth; }
   font:inherit;
 }
 
+#buyBtn{
+  color: white;
+  background-color: #D90012;
+}
+
 /* ---------- ACTION ROWS (fixes awkward buttons) ---------- */
 
 /* Ticket form action row: button + note on one line, no stretching */
@@ -374,6 +379,13 @@ html { scroll-behavior:smooth; }
 .modal-card h3{ margin:0 0 .5rem; }
 .modal-card ol{ margin:.5rem 0 1rem; }
 .modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
+
+/* Use the id you gave the link */
+#openSwishBtn[aria-disabled="true"] {
+  opacity: .5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
 
 /* QR image inside modal (responsive, capped width) */
 .swish-qr{

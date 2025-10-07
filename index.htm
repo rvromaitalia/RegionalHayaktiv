@@ -30,7 +30,7 @@
 
   <link rel="stylesheet" href="./assets/css/site.css">
   <script src="./assets/js/ticket.js" defer></script>
-  <img src="./images/swish-qr-720.png">
+
 </head>
 
 <body>
@@ -292,7 +292,16 @@
                         <!-- Actions -->
                         <div class="form-actions" style="display:flex;align-items:center;gap:.75rem;margin-top:1rem;">
                             <input type="hidden" name="action" value="buy">
-                            <button id="buyBtn" class="btn btn-primary" type="button">Köp biljetter</button>
+                            <button id="buyBtn" data-amount="150" data-message="Biljett Vardan 8 nov" class="btn buy">
+                                <span class="label">Köp biljett</span>
+                                <span class="spinner" aria-hidden="true"></span>
+                            </button>
+                            
+                            <div id="fallback" hidden>
+                                <p>Kunde inte öppna Swish automatiskt. Scanna QR-koden eller klicka på betalningslänken nedan.</p>
+                                <img src="./images/swish-qr-720.png" alt="Swish QR">
+                                <p><a id="fallbackLink" href="#" rel="noopener">Öppna betalning</a></p>
+                            </div>
                             <p class="muted small">Betalning sker efter bekräftelse (Swish: 123 404 81 79).</p>
                         </div>
         
@@ -306,15 +315,15 @@
                                     <li>Belopp: <strong>500 kr</strong></li>
                                     <li>Meddelande: <strong>Vardan 8/11 – <span id="qtyOut">1</span> biljetter</strong></li>
                                 </ol>
-        
+                            
                                 <!-- Responsive QR image (export a cropped/optimized file; remove the space in filename) -->
-                                <img class="swish-qr" src="/images/swish-qr-720 .png" srcset="/images/swish-qr-480.png 480w,
-                                        /images/swish-qr-720.png 720w,
-                                        /images/swish-qr-1080.png 1080w" sizes="(max-width: 600px) 90vw, 360px"
-                                    alt="Swish QR-kod" loading="lazy" decoding="async">
-        
+                                <img class="swish-qr" src="./images/swish-qr-720.png" srcset="./images/swish-qr-480.png 480w,
+                                                                        ./images/swish-qr-720.png 720w,
+                                                                        ./images/swish-qr-1080.png 1080w"
+                                    sizes="(max-width: 600px) 90vw, 360px" alt="Swish QR-kod" loading="lazy" decoding="async">
+                            
                                 <div class="modal-actions">
-                                    <a class="btn btn-primary" href="swish://">Öppna Swish-appen</a>
+                                    <a class="btn btn-primary" id="openSwishBtn" href="swish://">Öppna Swish-appen</a>
                                     <button class="btn btn-outline" id="closeModal" type="button">Stäng</button>
                                 </div>
                             </div>
