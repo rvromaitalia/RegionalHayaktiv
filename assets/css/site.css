@@ -364,21 +364,33 @@ html { scroll-behavior:smooth; }
 /* Modal + QR */
 .modal[hidden]{ display:none; }
 
-.modal{
-  position:fixed; inset:0; background:rgba(0,0,0,.45);
-  display:flex; align-items:center; justify-content:center;
-  padding:1rem; z-index:100;
+/* --- Swish modal: size & scrolling --- */
+.modal {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.5);
+  padding: 1rem; z-index: 1000;
 }
 
-.modal-card{
-  background:#fff; border-radius:16px;
-  padding:1.25rem 1.5rem; max-width:520px; width:100%;
-  box-shadow:0 12px 40px rgba(0,0,0,.18);
+.modal-card {
+  width: min(92vw, 520px);         /* narrower on small screens */
+  max-height: 80vh;                /* visible on laptops; change to 50vh if you prefer */
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  overflow: auto;                  /* inner content scrolls if it’s taller than max-height */
 }
 
 .modal-card h3{ margin:0 0 .5rem; }
 .modal-card ol{ margin:.5rem 0 1rem; }
-.modal-actions{ display:flex; gap:.5rem; justify-content:flex-end; }
+/* Keep action buttons visible while scrolling the modal content */
+.modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  padding-top: .5rem;
+  margin-top: .5rem;
+}
 
 /* Use the id you gave the link */
 #openSwishBtn[aria-disabled="true"] {
@@ -388,10 +400,13 @@ html { scroll-behavior:smooth; }
 }
 
 /* QR image inside modal (responsive, capped width) */
-.swish-qr{
-  display:block; width:100%; max-width:360px; height:auto;
-  margin:.5rem 0 1rem; border-radius:12px;
-  box-shadow:0 6px 18px rgba(0,0,0,.08);
+/* Tame the QR size so it never pushes buttons off-screen */
+.swish-qr {
+  display: block;
+  margin: .5rem auto 1rem;
+  width: 100%;
+  max-width: clamp(220px, 40vh, 320px);  /* scales with viewport height; caps at 320px */
+  height: auto;
 }
 
 /* ============================
@@ -422,6 +437,11 @@ footer{ background:#0b0c0f; color:#fff; }
 .footnote{ border-top: 1px solid rgba(255,255,255,.12); padding-block: .9rem; font-size:.95rem; color:#dadde3; }
 @media (max-width: 900px){ .footer-inner{ grid-template-columns: 1fr; } }
 
+/* Extra-tight laptops: shrink a bit more */
+@media (max-height: 700px) {
+  .modal-card { max-height: 70vh; }
+  .swish-qr   { max-width: clamp(200px, 36vh, 300px); }
+}
 /* Footer länkar (flyttat från inline style) */
 footer a { color:#fff; text-decoration: underline; }
 
