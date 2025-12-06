@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- Helpers ----------
   const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n); // 1000 -> "1 000"
+  const params = new URLSearchParams(location.search);
+  if (params.get('paid') === '1') {
+    document.querySelector('#flash')?.insertAdjacentHTML(
+      'afterbegin',
+      '<div class="notice success">Tack! Om betalningen gick igenom får du strax bekräftelse.</div>'
+    );
+  }
+
 
   // Prefer data-price on <option>, fallback to parsing "(500 kr)" in text
   function getUnitPriceSEK() {

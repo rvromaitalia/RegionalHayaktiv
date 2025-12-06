@@ -78,8 +78,8 @@ body{
   padding: 1rem 1.1rem;
 }
 
-.event-card { overflow: hidden; }
-.card-img { width:100%; aspect-ratio:16/11; object-fit:cover; display:block; }
+.card { overflow: hidden; }
+.card-img { width:100%; aspect-ratio:4/5; object-fit:cover; display:block; object-position: 20% 0%;  /* << shift what part we see */   }
 .card-title-link { text-decoration:none; color:inherit; }
 .card-title-link:hover { text-decoration:underline; }
 .cta-hint { color: var(--muted); margin:.25rem 0 .75rem; }
@@ -97,6 +97,22 @@ body{
 /* Smooth scroll & sticky header offset */
 html { scroll-behavior:smooth; }
 #tickets { scroll-margin-top: 90px; }
+
+/*Individual shifting of the card images
+/* DJ Grigor – show a bit more of the top (head + logo) */
+.card-img--grigor {
+  object-position: 50% 25%;  /* center horizontally, 25% from the top */
+}
+
+/* Karaoke – probably fine centered */
+.card-img--karaoke {  /* Make sure that you have right class id for the picture, u can ad multiple*/
+  object-position: 50% 50%;
+}
+
+/* Vardan – adjust as needed */
+.card-img--vardan { /* Make sure that yuu have right class id for the picture, u can ad multiple*/
+  object-position: 18% 40%;  /* example: show slightly more of the lower part */
+}
 
 /* ============================
    Header & navigering
