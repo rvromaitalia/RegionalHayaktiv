@@ -58,7 +58,7 @@ I index.html, uppdatera action="https://formspree.io/f/XXXXXXX" i respektive for
 
 Swish
 
-Ange Swish-numret i texterna.
+Ange Swish-numret i texterna. 
 
 Lägg in QR-bilder i images/ (se storlekar nedan).
 

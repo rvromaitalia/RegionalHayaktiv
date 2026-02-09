@@ -1,0 +1,8 @@
+name = "hayaktiv-payments"
+main = "src/worker.js"
+compatibility_date = "2026-02-08"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hayaktiv_db"
+database_id = "21de4785-6df1-495a-92cb-cd2317b4413c"

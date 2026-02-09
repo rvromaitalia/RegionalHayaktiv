@@ -13,12 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const nameInput     = form?.querySelector('input[name="name"]');
   const amountOut     = document.getElementById('amountOut');
   const messageOut    = document.getElementById('messageOut');
-  const EVENT_LABEL   = 'Vardan Petrosyan';
+  const EVENT_LABEL   = 'Akop Jan';
 
   // === Configure your backend endpoint here ===
-  const BACKEND_URL = 'https://<your-vercel-app>.vercel.app/api/swish/create';
+  const BACKEND_URL = 'http://127.0.0.1:8787/api/swish/create';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
+  let lastDeeplink = null;
+  let lastOrderId = null;
 
   // ---------- Helpers ----------
   const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n); // 1000 -> "1 000"
@@ -135,6 +137,14 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const deeplink = await createSwishPayment(total, description, orderId);
 
+      lastDeeplink = deeplink;
+      lastOrderId  = orderId;
+
+      if (isMobile && openSwishBtn) {
+        openSwishBtn.href = deeplink;   // critical for mobile retry
+        openSwishBtn.style.display = 'inline-block';
+      }
+
       if (isMobile) {
         // Mobile: open Swish app with prefilled data
         window.location.href = deeplink;
@@ -162,30 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  closeModalBtn?.addEventListener('click', closeModal);
-
-  // On mobile, allow opening Swish from the modal (if you want a retry)
-  if (isMobile && openSwishBtn) {
-    openSwishBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      // Recreate payment to avoid expired tokens
-      const qty   = Math.max(1, parseInt(qtyInput?.value || '1', 10));
-      const unit  = getUnitPriceSEK();
-      const total = unit * qty;
-      const ticketLabel = typeSelect?.selectedOptions?.[0]?.textContent?.trim() || 'Biljett';
-      const descName    = (nameInput?.value || '').trim();
-      const description = `${descName ? descName + ' – ' : ''}${EVENT_LABEL} – ${ticketLabel} x${qty}`;
-      const orderId     = (crypto?.randomUUID && crypto.randomUUID()) || String(Date.now());
-      try {
-        const deeplink = await createSwishPayment(total, description, orderId);
-        window.location.href = deeplink;
-      } catch (err) {
-        console.error(err);
-        alert('Kunde inte öppna Swish.');
-      }
-    });
-  }
-
+  closeModalBtn?.addEventListener('click', closeModal)
   // Initialize on load
   updateAmounts();
 });
