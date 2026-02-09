@@ -1,3 +1,12 @@
+// ---- Swish-safe message sanitizer ----
+function sanitizeSwishMessage(input) {
+  return String(input || "")
+    .replace(/[^A-Za-z0-9 ]+/g, " ") // only letters, digits, space
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 50);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -28,41 +37,39 @@ export default {
       });
     }
 
-    // --------------------------------------------
+    // -------------------------------------------------
     // POST /api/swish/create
-    // Creates order in D1 + creates Swish payment request via Merchant API (mTLS)
-    // Returns deeplink: swish://paymentrequest?token=...
-    // --------------------------------------------
+    // -------------------------------------------------
     if (url.pathname === "/api/swish/create" && request.method === "POST") {
       try {
         const body = await request.json().catch(() => ({}));
 
         const amount = Number(body.amount);
-        const message = String(body.message || "").slice(0, 50);
+        const rawMessage = body.message;
+        const message = sanitizeSwishMessage(rawMessage);
         const orderId = body.orderId || crypto.randomUUID();
 
         if (!Number.isFinite(amount) || amount <= 0) {
           return json({ error: "Invalid amount" }, 400);
         }
         if (!message) {
-          return json({ error: "Missing message" }, 400);
+          return json({ error: "Invalid message" }, 400);
         }
 
-        // Required env vars
-        const apiBase = env.SWISH_API_BASE;        // e.g. https://cpc.getswish.net/swish-cpcapi/api/v2
-        const payeeAlias = env.SWISH_PAYEE_ALIAS;  // your Swish number
+        const apiBase = env.SWISH_API_BASE;        // https://cpc.getswish.net/swish-cpcapi/api/v2
+        const payeeAlias = env.SWISH_PAYEE_ALIAS;  // Swish number
 
         if (!apiBase || !payeeAlias) {
           return json(
             {
-              error: "Missing server configuration",
-              details: "SWISH_API_BASE and/or SWISH_PAYEE_ALIAS are not set",
+              error: "Server misconfigured",
+              details: "Missing SWISH_API_BASE or SWISH_PAYEE_ALIAS",
             },
             500
           );
         }
 
-        // 1) Save initial order in D1
+        // 1) Store order
         await env.DB.prepare(
           `INSERT INTO orders (id, created_at, amount, message, status)
            VALUES (?, ?, ?, ?, ?)`
@@ -70,13 +77,13 @@ export default {
           .bind(orderId, new Date().toISOString(), amount, message, "CREATED")
           .run();
 
-        // 2) Create payment request (PUT variant)
-        // In this variant, instructionUUID is the id/token for the payment request.
+        // 2) Create Swish payment request (PUT)
         const instructionUUID = crypto.randomUUID();
+        const callbackUrl = `https://${url.host}/api/swish/callback`;
 
         const payload = {
           payeePaymentReference: orderId,
-          callbackUrl: "https://regionalhayaktiv.org/?paid=1", // temporary
+          callbackUrl,
           payeeAlias,
           amount: amount.toFixed(2),
           currency: "SEK",
@@ -95,9 +102,14 @@ export default {
         const respText = await swishResp.text();
 
         if (!swishResp.ok) {
-          console.error("Swish API error", { status: swishResp.status, body: respText });
+          console.error("Swish API error", {
+            status: swishResp.status,
+            body: respText,
+          });
 
-          await env.DB.prepare(`UPDATE orders SET status = ? WHERE id = ?`)
+          await env.DB.prepare(
+            `UPDATE orders SET status = ? WHERE id = ?`
+          )
             .bind("SWISH_ERROR", orderId)
             .run();
 
@@ -105,23 +117,21 @@ export default {
             {
               error: "Swish API error",
               swishStatus: swishResp.status,
-              details: respText || "(empty body)",
+              details: respText,
             },
             502
           );
         }
 
-        // 3) Token in PUT flow = instructionUUID (don’t try to parse body)
+        // PUT-flow token = instructionUUID
         const token = instructionUUID;
 
-        // 4) Store token in D1
         await env.DB.prepare(
           `UPDATE orders SET status = ?, swish_token = ? WHERE id = ?`
         )
           .bind("TOKEN_CREATED", token, orderId)
           .run();
 
-        // 5) Return correct Swish deeplink
         const deeplink = `swish://paymentrequest?token=${encodeURIComponent(token)}`;
 
         return json({ orderId, token, deeplink }, 200);
@@ -131,17 +141,41 @@ export default {
       }
     }
 
-    // --------------------------------------------
+    // -------------------------------------------------
+    // POST /api/swish/callback  (called by Swish)
+    // -------------------------------------------------
+    if (url.pathname === "/api/swish/callback" && request.method === "POST") {
+      try {
+        const data = await request.json().catch(() => ({}));
+
+        const orderId = data.payeePaymentReference;
+        const status = data.status || "UNKNOWN";
+
+        if (orderId) {
+          await env.DB.prepare(
+            `UPDATE orders SET status = ? WHERE id = ?`
+          )
+            .bind(status, orderId)
+            .run();
+        }
+
+        return new Response(null, { status: 204 });
+      } catch (err) {
+        console.error("Callback failed:", err);
+        return new Response(null, { status: 204 });
+      }
+    }
+
+    // -------------------------------------------------
     // GET /api/swish/status?id=...
-    // --------------------------------------------
+    // -------------------------------------------------
     if (url.pathname === "/api/swish/status" && request.method === "GET") {
       const id = url.searchParams.get("id");
       if (!id) return json({ error: "Missing id" }, 400);
 
       const row = await env.DB.prepare(
         `SELECT id, status, amount, message, created_at, swish_token
-         FROM orders
-         WHERE id = ?`
+         FROM orders WHERE id = ?`
       )
         .bind(id)
         .first();
