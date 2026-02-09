@@ -10,6 +10,29 @@ target/
 *.iml
 *.ipr
 
+# --- Cloudflare Wrangler ---
+.wrangler/
+
+# --- Node ---
+node_modules/
+
+# --- Environment / secrets ---
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# --- OS / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Logs ---
+*.log
+
+
 ### Eclipse ###
 .apt_generated
 .classpath
