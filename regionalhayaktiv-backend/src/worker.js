@@ -7,6 +7,11 @@ function sanitizeSwishMessage(input) {
     .slice(0, 50);
 }
 
+function generateSwishReference() {
+  // 20 chars, letters + digits only
+  return crypto.randomUUID().replace(/[^A-Za-z0-9]/g, "").slice(0, 20);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -47,7 +52,7 @@ export default {
         const amount = Number(body.amount);
         const rawMessage = body.message;
         const message = sanitizeSwishMessage(rawMessage);
-        const orderId = body.orderId || crypto.randomUUID();
+        const orderId = body.orderId || generateSwishReference();
 
         if (!Number.isFinite(amount) || amount <= 0) {
           return json({ error: "Invalid amount" }, 400);
