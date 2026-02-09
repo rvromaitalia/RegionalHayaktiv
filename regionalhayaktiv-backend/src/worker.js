@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
+    
     // --- CORS ---
     const CORS_HEADERS = {
       "Access-Control-Allow-Origin": "https://regionalhayaktiv.org",
