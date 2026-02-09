@@ -7,7 +7,6 @@ export default {
       "Access-Control-Allow-Origin": "https://regionalhayaktiv.org",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
-      // Optional but recommended:
       "Access-Control-Max-Age": "86400",
     };
 
@@ -31,8 +30,8 @@ export default {
 
     // --------------------------------------------
     // POST /api/swish/create
-    // Creates an order in D1 + creates Swish payment request via Merchant API (mTLS)
-    // Returns a valid Swish deeplink: swish://paymentrequest?token=...
+    // Creates order in D1 + creates Swish payment request via Merchant API (mTLS)
+    // Returns deeplink: swish://paymentrequest?token=...
     // --------------------------------------------
     if (url.pathname === "/api/swish/create" && request.method === "POST") {
       try {
@@ -49,9 +48,9 @@ export default {
           return json({ error: "Missing message" }, 400);
         }
 
-        // Ensure required env vars exist
-        const apiBase = env.SWISH_API_BASE;
-        const payeeAlias = env.SWISH_PAYEE_ALIAS;
+        // Required env vars
+        const apiBase = env.SWISH_API_BASE;        // e.g. https://cpc.getswish.net/swish-cpcapi/api/v2
+        const payeeAlias = env.SWISH_PAYEE_ALIAS;  // your Swish number
 
         if (!apiBase || !payeeAlias) {
           return json(
@@ -71,34 +70,33 @@ export default {
           .bind(orderId, new Date().toISOString(), amount, message, "CREATED")
           .run();
 
-        // 2) Create Swish Merchant API payment request (mTLS)
-        // NOTE: some Swish setups use PUT /paymentrequests/{instructionUUID}
-        // This version uses POST /paymentrequests. If your Swish docs say PUT, tell me and I’ll adapt it.
+        // 2) Create payment request (PUT variant)
+        // In this variant, instructionUUID is the id/token for the payment request.
+        const instructionUUID = crypto.randomUUID();
+
         const payload = {
           payeePaymentReference: orderId,
-          callbackUrl: "https://regionalhayaktiv.org/?paid=1", // temporary; later we’ll implement real callback
+          callbackUrl: "https://regionalhayaktiv.org/?paid=1", // temporary
           payeeAlias,
-          amount: amount.toFixed(2), // Swish typically expects "1000.00"
+          amount: amount.toFixed(2),
           currency: "SEK",
           message,
         };
 
-        const swishResp = await env.SWISH_MTLS.fetch(`${apiBase}/paymentrequests`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        const swishResp = await env.SWISH_MTLS.fetch(
+          `${apiBase}/paymentrequests/${instructionUUID}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
 
         const respText = await swishResp.text();
 
         if (!swishResp.ok) {
-          // Log full Swish error so you can see it in `wrangler tail`
-          console.error("Swish API error", {
-            status: swishResp.status,
-            body: respText,
-          });
+          console.error("Swish API error", { status: swishResp.status, body: respText });
 
-          // Mark order as failed
           await env.DB.prepare(`UPDATE orders SET status = ? WHERE id = ?`)
             .bind("SWISH_ERROR", orderId)
             .run();
@@ -107,52 +105,23 @@ export default {
             {
               error: "Swish API error",
               swishStatus: swishResp.status,
-              details: respText,
+              details: respText || "(empty body)",
             },
             502
           );
         }
 
-        // 3) Extract token (depends on Swish version: Location header or JSON body)
-        const location = swishResp.headers.get("location") || swishResp.headers.get("Location");
+        // 3) Token in PUT flow = instructionUUID (don’t try to parse body)
+        const token = instructionUUID;
 
-        let token = null;
-        try {
-          const obj = JSON.parse(respText || "{}");
-          token = obj.token || obj.id || obj.paymentRequestToken || null;
-        } catch {
-          // ignore parse errors
-        }
-
-        // If token is in location like .../paymentrequests/{id}
-        if (!token && location) {
-          token = location.split("/").pop();
-        }
-
-        if (!token) {
-          console.error("Swish token missing", { location, respText });
-
-          await env.DB.prepare(`UPDATE orders SET status = ? WHERE id = ?`)
-            .bind("SWISH_NO_TOKEN", orderId)
-            .run();
-
-          return json(
-            {
-              error: "No token returned from Swish",
-              location,
-              details: respText,
-            },
-            502
-          );
-        }
-
-        // 4) Store token in D1 (requires column swish_token)
-        // If you don’t have it yet: ALTER TABLE orders ADD COLUMN swish_token TEXT;
-        await env.DB.prepare(`UPDATE orders SET status = ?, swish_token = ? WHERE id = ?`)
+        // 4) Store token in D1
+        await env.DB.prepare(
+          `UPDATE orders SET status = ?, swish_token = ? WHERE id = ?`
+        )
           .bind("TOKEN_CREATED", token, orderId)
           .run();
 
-        // ✅ Correct Swish deeplink format (fixes “Incorrect link”)
+        // 5) Return correct Swish deeplink
         const deeplink = `swish://paymentrequest?token=${encodeURIComponent(token)}`;
 
         return json({ orderId, token, deeplink }, 200);
