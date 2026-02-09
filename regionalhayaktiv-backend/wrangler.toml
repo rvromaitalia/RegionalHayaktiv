@@ -6,3 +6,8 @@ compatibility_date = "2026-02-08"
 binding = "DB"
 database_name = "hayaktiv_db"
 database_id = "21de4785-6df1-495a-92cb-cd2317b4413c"
+
+[[mtls_certificates]]
+binding = "SWISH_MTLS"
+certificate_id = "46b5a46d-a576-419c-942b-aa2db1facc1b"
+remote = true
