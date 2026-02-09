@@ -10,6 +10,16 @@ target/
 *.iml
 *.ipr
 
+# Cloudflare Wrangler
+.wrangler/
+
+# Node
+node_modules/
+
+# Env files
+.env
+.env.*
+
 ### Eclipse ###
 .apt_generated
 .classpath
