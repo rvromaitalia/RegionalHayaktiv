@@ -15,15 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const messageOut    = document.getElementById('messageOut');
   const EVENT_LABEL   = 'Akop Jan';
 
-  // === Configure your backend endpoint here ===
-  const BACKEND_URL = 'https://hayaktiv-payments.rvromaitalia.workers.dev/api/swish/create';
+  // Backend endpoint
+  const BACKEND_URL =
+    'https://hayaktiv-payments.rvromaitalia.workers.dev/api/swish/create';
 
-  const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
+  const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(
+    navigator.userAgent
+  );
+
   let lastDeeplink = null;
-  let lastOrderId = null;
 
   // ---------- Helpers ----------
-  const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n); // 1000 -> "1 000"
+  const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n);
+
   const params = new URLSearchParams(location.search);
   if (params.get('paid') === '1') {
     document.querySelector('#flash')?.insertAdjacentHTML(
@@ -32,8 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
     );
   }
 
-
-  // Prefer data-price on <option>, fallback to parsing "(500 kr)" in text
   function getUnitPriceSEK() {
     const opt = typeSelect?.selectedOptions?.[0];
     if (!opt) return 0;
@@ -52,71 +54,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (messageOut) {
       const name = (nameInput?.value || '').trim();
-      messageOut.textContent = name ? `${name} – ${EVENT_LABEL}` : EVENT_LABEL;
+      messageOut.textContent = name
+        ? `${name} – ${EVENT_LABEL}`
+        : EVENT_LABEL;
     }
   }
 
   function openModal()  { updateAmounts(); modal?.removeAttribute('hidden'); }
   function closeModal() { modal?.setAttribute('hidden', ''); }
 
-  // New: create payment via backend → get deep link with token
-  async function createSwishPayment(totalAmount, description, orderId) {
+  // ---- API call ----
+  async function createSwishPayment(totalAmount, description) {
     const resp = await fetch(BACKEND_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       mode: 'cors',
       body: JSON.stringify({
         amount: totalAmount,
-        message: description,
-        orderId
+        message: description
       })
     });
 
     const data = await resp.json();
     if (!resp.ok || !data?.deeplink) {
       const reason = data?.error || 'Okänt fel';
-      throw new Error(`Kunde inte skapa Swish-betalning: ${reason}`);
+      throw new Error(reason);
     }
-    return data.deeplink; // swish://payment?token=...&callbackurl=...
+    return data.deeplink;
   }
 
-  // Render a QR for the deep link (desktop fallback)
+  // QR rendering (desktop)
   function setQrForDeepLink(deeplink) {
     if (!qrImg) return;
-    // Use a lightweight QR image service (client-side only)
-    const url = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(deeplink);
-    qrImg.src = url;
+    qrImg.src =
+      'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' +
+      encodeURIComponent(deeplink);
   }
 
-  // Make sure buy button isn’t a submit and isn’t disabled
+  // Button safety
   buyBtn?.setAttribute('type', 'button');
-  buyBtn?.removeAttribute('aria-disabled');
   if (buyBtn) buyBtn.disabled = false;
 
-  // Desktop: disable the deep-link button in the modal (we’ll show QR instead)
+  // Desktop: disable openSwishBtn
   if (!isMobile && openSwishBtn) {
     openSwishBtn.setAttribute('aria-disabled', 'true');
-    openSwishBtn.removeAttribute('href');
     openSwishBtn.setAttribute('tabindex', '-1');
-    openSwishBtn.title = 'Öppna i mobilen';
-    openSwishBtn.addEventListener('click', e => e.preventDefault());
+    openSwishBtn.addEventListener('click', (e) => e.preventDefault());
   }
 
-  // Live updates when user edits fields
+  // Live updates
   typeSelect?.addEventListener('change', updateAmounts);
   qtyInput?.addEventListener('input', updateAmounts);
   nameInput?.addEventListener('input', updateAmounts);
 
-  // (Optional) QR diagnostics
-  qrImg?.addEventListener('error', () => console.warn('QR image failed:', qrImg.currentSrc));
-  qrImg?.addEventListener('load',  () => console.log('QR image loaded:', qrImg.currentSrc));
-
   // Buy click
   buyBtn?.addEventListener('click', async (e) => {
     e.preventDefault();
-    e.stopPropagation();
 
-    // Require valid form fields first
     if (form && !form.checkValidity()) {
       form.reportValidity();
       return;
@@ -125,54 +119,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const qty   = Math.max(1, parseInt(qtyInput?.value || '1', 10));
     const unit  = getUnitPriceSEK();
     const total = unit * qty;
+
     if (!total || total <= 0) {
       alert('Belopp saknas eller är ogiltigt.');
       return;
     }
+
     const ticketLabel = typeSelect?.selectedOptions?.[0]?.textContent?.trim() || 'Biljett';
     const descName    = (nameInput?.value || '').trim();
-    const description = `${descName ? descName + ' – ' : ''}${EVENT_LABEL} – ${ticketLabel} x${qty}`;
-    const orderId     = (crypto?.randomUUID && crypto.randomUUID()) || String(Date.now());
+    const description =
+      `${descName ? descName + ' ' : ''}${EVENT_LABEL} ${ticketLabel} ${qty}`;
 
     try {
-      const deeplink = await createSwishPayment(total, description, orderId);
-
+      const deeplink = await createSwishPayment(total, description);
       lastDeeplink = deeplink;
-      lastOrderId  = orderId;
 
       if (isMobile && openSwishBtn) {
-        openSwishBtn.href = deeplink;   // critical for mobile retry
+        openSwishBtn.href = deeplink;
         openSwishBtn.style.display = 'inline-block';
       }
 
       if (isMobile) {
-        // Mobile: open Swish app with prefilled data
         window.location.href = deeplink;
-        // (Optional) if you want a fallback modal if app doesn’t open:
-        const wasHidden = document.visibilityState === 'hidden';
+
+        // fallback if app doesn’t open
         const t = setTimeout(() => {
-          if (document.visibilityState === 'visible' && !wasHidden) {
-            setQrForDeepLink(deeplink);
-            openModal();
-          }
+          setQrForDeepLink(deeplink);
+          openModal();
         }, 2500);
-        const cancel = () => clearTimeout(t);
-        window.addEventListener('blur', cancel, { once: true });
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') cancel();
-        }, { once: true });
+
+        window.addEventListener('blur', () => clearTimeout(t), { once: true });
       } else {
-        // Desktop: show QR so the user scans with Swish
         setQrForDeepLink(deeplink);
         openModal();
       }
     } catch (err) {
       console.error(err);
-      alert('Kunde inte skapa Swish-betalning. Försök igen om en stund.');
+      alert('Kunde inte skapa Swish-betalning.');
     }
   });
 
-  closeModalBtn?.addEventListener('click', closeModal)
-  // Initialize on load
+  closeModalBtn?.addEventListener('click', closeModal);
   updateAmounts();
 });
