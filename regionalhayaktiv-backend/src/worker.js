@@ -1,14 +1,13 @@
-// ---- Swish-safe message sanitizer ----
 function sanitizeSwishMessage(input) {
   return String(input || "")
-    .replace(/[^A-Za-z0-9 ]+/g, " ") // only letters, digits, space
+    .replace(/[^A-Za-z0-9 ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 50);
 }
 
 function generateSwishReference() {
-  // 20 chars, letters + digits only
+  // Swish-safe: only A–Z a–z 0–9, max 35 chars (we use 20)
   return crypto.randomUUID().replace(/[^A-Za-z0-9]/g, "").slice(0, 20);
 }
 
@@ -16,7 +15,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // --- CORS ---
     const CORS_HEADERS = {
       "Access-Control-Allow-Origin": "https://regionalhayaktiv.org",
       "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
@@ -30,29 +28,23 @@ export default {
         headers: { "Content-Type": "application/json", ...CORS_HEADERS },
       });
 
-    // Preflight
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS_HEADERS });
     }
 
-    // Health check
     if (url.pathname === "/" && request.method === "GET") {
       return new Response("Backend is running ✅", {
         headers: { "Content-Type": "text/plain", ...CORS_HEADERS },
       });
     }
 
-    // -------------------------------------------------
-    // POST /api/swish/create
-    // -------------------------------------------------
+    // -------- CREATE --------
     if (url.pathname === "/api/swish/create" && request.method === "POST") {
       try {
         const body = await request.json().catch(() => ({}));
 
         const amount = Number(body.amount);
-        const rawMessage = body.message;
-        const message = sanitizeSwishMessage(rawMessage);
-        const orderId = body.orderId || generateSwishReference();
+        const message = sanitizeSwishMessage(body.message);
 
         if (!Number.isFinite(amount) || amount <= 0) {
           return json({ error: "Invalid amount" }, 400);
@@ -61,33 +53,33 @@ export default {
           return json({ error: "Invalid message" }, 400);
         }
 
-        const apiBase = env.SWISH_API_BASE;        // https://cpc.getswish.net/swish-cpcapi/api/v2
-        const payeeAlias = env.SWISH_PAYEE_ALIAS;  // Swish number
-
+        const apiBase = env.SWISH_API_BASE;
+        const payeeAlias = env.SWISH_PAYEE_ALIAS;
         if (!apiBase || !payeeAlias) {
           return json(
-            {
-              error: "Server misconfigured",
-              details: "Missing SWISH_API_BASE or SWISH_PAYEE_ALIAS",
-            },
+            { error: "Server misconfigured", details: "Missing SWISH_API_BASE or SWISH_PAYEE_ALIAS" },
             500
           );
         }
 
-        // 1) Store order
+        // IMPORTANT:
+        // orderId = internal DB id (can be UUID with hyphens)
+        // payeePaymentReference = Swish-safe reference (NO hyphens)
+        const orderId = crypto.randomUUID();
+        const payeePaymentReference = generateSwishReference();
+
         await env.DB.prepare(
-          `INSERT INTO orders (id, created_at, amount, message, status)
-           VALUES (?, ?, ?, ?, ?)`
+          `INSERT INTO orders (id, created_at, amount, message, status, payee_reference)
+           VALUES (?, ?, ?, ?, ?, ?)`
         )
-          .bind(orderId, new Date().toISOString(), amount, message, "CREATED")
+          .bind(orderId, new Date().toISOString(), amount, message, "CREATED", payeePaymentReference)
           .run();
 
-        // 2) Create Swish payment request (PUT)
         const instructionUUID = crypto.randomUUID();
         const callbackUrl = `https://${url.host}/api/swish/callback`;
 
         const payload = {
-          payeePaymentReference: orderId,
+          payeePaymentReference, // ✅ Swish-safe now
           callbackUrl,
           payeeAlias,
           amount: amount.toFixed(2),
@@ -107,38 +99,27 @@ export default {
         const respText = await swishResp.text();
 
         if (!swishResp.ok) {
-          console.error("Swish API error", {
-            status: swishResp.status,
-            body: respText,
-          });
+          console.error("Swish API error", { status: swishResp.status, body: respText });
 
-          await env.DB.prepare(
-            `UPDATE orders SET status = ? WHERE id = ?`
-          )
+          await env.DB.prepare(`UPDATE orders SET status = ? WHERE id = ?`)
             .bind("SWISH_ERROR", orderId)
             .run();
 
           return json(
-            {
-              error: "Swish API error",
-              swishStatus: swishResp.status,
-              details: respText,
-            },
+            { error: "Swish API error", swishStatus: swishResp.status, details: respText },
             502
           );
         }
 
-        // PUT-flow token = instructionUUID
         const token = instructionUUID;
 
-        await env.DB.prepare(
-          `UPDATE orders SET status = ?, swish_token = ? WHERE id = ?`
-        )
+        await env.DB.prepare(`UPDATE orders SET status = ?, swish_token = ? WHERE id = ?`)
           .bind("TOKEN_CREATED", token, orderId)
           .run();
 
         const deeplink = `swish://paymentrequest?token=${encodeURIComponent(token)}`;
 
+        // Return the server-generated orderId so frontend can poll status
         return json({ orderId, token, deeplink }, 200);
       } catch (err) {
         console.error("Create failed:", err);
@@ -146,21 +127,19 @@ export default {
       }
     }
 
-    // -------------------------------------------------
-    // POST /api/swish/callback  (called by Swish)
-    // -------------------------------------------------
+    // -------- CALLBACK --------
     if (url.pathname === "/api/swish/callback" && request.method === "POST") {
       try {
         const data = await request.json().catch(() => ({}));
 
-        const orderId = data.payeePaymentReference;
+        // Swish sends back payeePaymentReference (your Swish-safe ref).
+        // We map it back to our order via payee_reference.
+        const payeeRef = data.payeePaymentReference;
         const status = data.status || "UNKNOWN";
 
-        if (orderId) {
-          await env.DB.prepare(
-            `UPDATE orders SET status = ? WHERE id = ?`
-          )
-            .bind(status, orderId)
+        if (payeeRef) {
+          await env.DB.prepare(`UPDATE orders SET status = ? WHERE payee_reference = ?`)
+            .bind(status, payeeRef)
             .run();
         }
 
@@ -171,15 +150,13 @@ export default {
       }
     }
 
-    // -------------------------------------------------
-    // GET /api/swish/status?id=...
-    // -------------------------------------------------
+    // -------- STATUS --------
     if (url.pathname === "/api/swish/status" && request.method === "GET") {
       const id = url.searchParams.get("id");
       if (!id) return json({ error: "Missing id" }, 400);
 
       const row = await env.DB.prepare(
-        `SELECT id, status, amount, message, created_at, swish_token
+        `SELECT id, status, amount, message, created_at, swish_token, payee_reference
          FROM orders WHERE id = ?`
       )
         .bind(id)
