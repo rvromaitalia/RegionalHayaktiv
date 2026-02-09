@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const EVENT_LABEL   = 'Akop Jan';
 
   // === Configure your backend endpoint here ===
-  const BACKEND_URL = 'http://127.0.0.1:8787/api/swish/create';
+const BACKEND_URL = 'https://hayaktiv-payments.rvromaitalia.workers.dev/api/swish/create';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
   let lastDeeplink = null;
