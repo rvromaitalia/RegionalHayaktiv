@@ -7,15 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const openSwishBtn  = document.getElementById('openSwishBtn');
   const qrImg         = document.querySelector('.swish-qr');
 
-  // Inputs / outputs
-  const typeSelect    = form?.querySelector('select[name="type"]');
-  const qtyInput      = form?.querySelector('input[name="qty"]');
   const nameInput     = form?.querySelector('input[name="name"]');
   const amountOut     = document.getElementById('amountOut');
   const messageOut    = document.getElementById('messageOut');
-  const EVENT_LABEL   = 'Akop Jan';
 
-  // Backend endpoint
+  // Hidden fields (Formspree)
+  const hOrd  = document.getElementById('qty_ordinarie');
+  const hUng  = document.getElementById('qty_ungdom');
+  const hBarn = document.getElementById('qty_barn');
+  const hTot  = document.getElementById('qty_total');
+  const hAmt  = document.getElementById('total_amount');
+
+  const EVENT_LABEL = 'Akop Jan';
+
   const BACKEND_URL =
     'https://hayaktiv-payments.rvromaitalia.workers.dev/api/swish/create';
 
@@ -23,47 +27,84 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.userAgent
   );
 
-  let lastDeeplink = null;
-
-  // ---------- Helpers ----------
   const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n);
 
-  const params = new URLSearchParams(location.search);
-  if (params.get('paid') === '1') {
-    document.querySelector('#flash')?.insertAdjacentHTML(
-      'afterbegin',
-      '<div class="notice success">Tack! Om betalningen gick igenom får du strax bekräftelse.</div>'
-    );
+  function getTicketRows() {
+    return Array.from(form?.querySelectorAll('.ticket-row') || []);
   }
 
-  function getUnitPriceSEK() {
-    const opt = typeSelect?.selectedOptions?.[0];
-    if (!opt) return 0;
-    const dp = opt.getAttribute('data-price');
-    if (dp) return Number(dp);
-    const m = (opt.textContent || '').match(/(\d[\d\s]*)\s*kr/i);
-    return m ? parseInt(m[1].replace(/\s/g, ''), 10) : 0;
+  function clampInt(v, min, max) {
+    const n = Number.parseInt(String(v), 10);
+    if (Number.isNaN(n)) return min;
+    return Math.max(min, Math.min(max, n));
   }
 
-  function updateAmounts() {
-    const qty   = Math.max(1, parseInt(qtyInput?.value || '1', 10));
-    const unit  = getUnitPriceSEK();
-    const total = unit * qty;
+  function readSelections() {
+    const rows = getTicketRows();
 
-    if (amountOut) amountOut.textContent = formatSEK(total);
+    const result = {
+      ordinarie: 0,
+      ungdom: 0,
+      barn: 0,
+      totalQty: 0,
+      totalAmount: 0,
+      breakdownText: []
+    };
+
+    for (const row of rows) {
+      const type = row.getAttribute('data-type');
+      const price = Number(row.getAttribute('data-price') || 0);
+
+      const input = row.querySelector('.qty-input');
+      const qty = clampInt(input?.value ?? 0, 0, 99);
+
+      if (input && String(qty) !== String(input.value)) input.value = String(qty);
+
+      if (type === 'ordinarie') result.ordinarie = qty;
+      if (type === 'ungdom') result.ungdom = qty;
+      if (type === 'barn') result.barn = qty;
+
+      result.totalQty += qty;
+      result.totalAmount += qty * price;
+
+      if (qty > 0) {
+        const label =
+          row.querySelector('.ticket-name')?.textContent?.trim() || type;
+        result.breakdownText.push(`${label} x${qty}`);
+      }
+    }
+
+    return result;
+  }
+
+  function syncHiddenFields(sel) {
+    if (hOrd)  hOrd.value  = String(sel.ordinarie);
+    if (hUng)  hUng.value  = String(sel.ungdom);
+    if (hBarn) hBarn.value = String(sel.barn);
+    if (hTot)  hTot.value  = String(sel.totalQty);
+    if (hAmt)  hAmt.value  = String(sel.totalAmount);
+  }
+
+  function updateOutputs() {
+    const sel = readSelections();
+    syncHiddenFields(sel);
+
+    if (amountOut) amountOut.textContent = formatSEK(sel.totalAmount);
 
     if (messageOut) {
       const name = (nameInput?.value || '').trim();
+      const lines = sel.breakdownText.length ? sel.breakdownText.join(', ') : 'Inga biljetter valda';
       messageOut.textContent = name
-        ? `${name} – ${EVENT_LABEL}`
-        : EVENT_LABEL;
+        ? `${name} – ${EVENT_LABEL} (${lines})`
+        : `${EVENT_LABEL} (${lines})`;
     }
+
+    return sel;
   }
 
-  function openModal()  { updateAmounts(); modal?.removeAttribute('hidden'); }
+  function openModal()  { updateOutputs(); modal?.removeAttribute('hidden'); }
   function closeModal() { modal?.setAttribute('hidden', ''); }
 
-  // ---- API call ----
   async function createSwishPayment(totalAmount, description) {
     const resp = await fetch(BACKEND_URL, {
       method: 'POST',
@@ -83,13 +124,36 @@ document.addEventListener('DOMContentLoaded', () => {
     return data.deeplink;
   }
 
-  // QR rendering (desktop)
   function setQrForDeepLink(deeplink) {
     if (!qrImg) return;
     qrImg.src =
       'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' +
       encodeURIComponent(deeplink);
   }
+
+  // Stepper events
+  form?.addEventListener('click', (e) => {
+    const btn = e.target.closest('.step-btn');
+    if (!btn) return;
+
+    const row = btn.closest('.ticket-row');
+    const input = row?.querySelector('.qty-input');
+    if (!row || !input) return;
+
+    const action = btn.getAttribute('data-action');
+    const current = clampInt(input.value, 0, 99);
+
+    const next = action === 'inc' ? current + 1 : current - 1;
+    input.value = String(clampInt(next, 0, 99));
+
+    updateOutputs();
+  });
+
+  form?.addEventListener('input', (e) => {
+    if (e.target.matches('.qty-input') || e.target === nameInput) {
+      updateOutputs();
+    }
+  });
 
   // Button safety
   buyBtn?.setAttribute('type', 'button');
@@ -102,12 +166,6 @@ document.addEventListener('DOMContentLoaded', () => {
     openSwishBtn.addEventListener('click', (e) => e.preventDefault());
   }
 
-  // Live updates
-  typeSelect?.addEventListener('change', updateAmounts);
-  qtyInput?.addEventListener('input', updateAmounts);
-  nameInput?.addEventListener('input', updateAmounts);
-
-  // Buy click
   buyBtn?.addEventListener('click', async (e) => {
     e.preventDefault();
 
@@ -116,23 +174,25 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    const qty   = Math.max(1, parseInt(qtyInput?.value || '1', 10));
-    const unit  = getUnitPriceSEK();
-    const total = unit * qty;
+    const sel = updateOutputs();
 
-    if (!total || total <= 0) {
+    if (!sel.totalQty) {
+      alert('Välj minst 1 biljett.');
+      return;
+    }
+
+    if (!sel.totalAmount || sel.totalAmount <= 0) {
       alert('Belopp saknas eller är ogiltigt.');
       return;
     }
 
-    const ticketLabel = typeSelect?.selectedOptions?.[0]?.textContent?.trim() || 'Biljett';
-    const descName    = (nameInput?.value || '').trim();
+    const descName = (nameInput?.value || '').trim();
+    const breakdown = sel.breakdownText.join(', ');
     const description =
-      `${descName ? descName + ' ' : ''}${EVENT_LABEL} ${ticketLabel} ${qty}`;
+      `${descName ? descName + ' – ' : ''}${EVENT_LABEL}: ${breakdown}`;
 
     try {
-      const deeplink = await createSwishPayment(total, description);
-      lastDeeplink = deeplink;
+      const deeplink = await createSwishPayment(sel.totalAmount, description);
 
       if (isMobile && openSwishBtn) {
         openSwishBtn.href = deeplink;
@@ -142,7 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (isMobile) {
         window.location.href = deeplink;
 
-        // fallback if app doesn’t open
         const t = setTimeout(() => {
           setQrForDeepLink(deeplink);
           openModal();
@@ -160,5 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   closeModalBtn?.addEventListener('click', closeModal);
-  updateAmounts();
+
+  // init
+  updateOutputs();
 });
