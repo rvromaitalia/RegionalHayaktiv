@@ -249,7 +249,7 @@ async function createSwishPayment(totalAmount, description) {
       }
     } catch (err) {
       console.error(err);
-      alert('Kunde inte skapa Swish-betalning.');
+      alert(`Kunde inte skapa Swish-betalning: ${err.message}`);
     }
   });
 
