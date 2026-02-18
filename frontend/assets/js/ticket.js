@@ -234,7 +234,7 @@ function setQrForDeepLink(deeplink) {
       if (isMobile) {
         window.location.href = deeplink;
 
-        const t = setTimeout(() => {
+        const t = setTimeout(async () => {
           await setQrForDeepLink(deeplink);
           openModal();
         }, 2500);
