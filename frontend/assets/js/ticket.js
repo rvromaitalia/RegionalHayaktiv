@@ -118,29 +118,38 @@ document.addEventListener('DOMContentLoaded', () => {
   //  });
 
 async function createSwishPayment(totalAmount, description) {
-  const amountStr = Number(totalAmount).toFixed(2);
+  const amountStr = Number(totalAmount).toFixed(2); // "650.00"
 
-  const resp = await fetch(BACKEND_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    mode: 'cors',
-    body: JSON.stringify({ amount: amountStr, message: description })
-  });
+  let resp;
+  try {
+    resp = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({
+        amount: amountStr,          // ✅ changed
+        message: description
+      })
+    });
+  } catch (e) {
+    // This is what you get on CORS / network errors
+    throw new Error(`Nätverksfel/CORS: ${e.message}`);
+  }
 
-  const text = await resp.text(); // read raw first
+  const text = await resp.text();   // ✅ safer than resp.json() first
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch {}
 
   if (!resp.ok) {
-    console.error('Swish create failed:', resp.status, data || text);
-    throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}`);
+    throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}: ${text}`);
   }
   if (!data?.deeplink) {
-    console.error('No deeplink in response:', data);
-    throw new Error('No deeplink returned');
+    throw new Error(`Saknar deeplink i svar: ${text}`);
   }
+
   return data.deeplink;
 }
+
 
 
   const data = await resp.json();
