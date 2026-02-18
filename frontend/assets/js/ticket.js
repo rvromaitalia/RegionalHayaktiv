@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const modal         = document.getElementById('swishModal');
   const closeModalBtn = document.getElementById('closeModal');
   const openSwishBtn  = document.getElementById('openSwishBtn');
-  const qrImg         = document.querySelector('.swish-qr');
+  //const qrImg         = document.querySelector('.swish-qr');
+  const qrImg = document.querySelector('#swishModal .swish-qr');
 
   const nameInput     = form?.querySelector('input[name="name"]');
   const amountOut     = document.getElementById('amountOut');
@@ -20,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const EVENT_LABEL = 'Akop Jan';
 
-  const BACKEND_URL =
-    'https://hayaktiv-payments.rvromaitalia.workers.dev/api/swish/create';
+  const BACKEND_URL = 'https://api.regionalhayaktiv.org/api/swish/create';
+  //const BACKEND_URL = 'http://localhost:3000/api/swish/create';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(
     navigator.userAgent
@@ -105,16 +106,37 @@ document.addEventListener('DOMContentLoaded', () => {
   function openModal()  { updateOutputs(); modal?.removeAttribute('hidden'); }
   function closeModal() { modal?.setAttribute('hidden', ''); }
 
+  //async function createSwishPayment(totalAmount, description) {
+  //  const resp = await fetch(BACKEND_URL, {
+  //    method: 'POST',
+  //    headers: { 'Content-Type': 'application/json' },
+  //    mode: 'cors',
+  //    body: JSON.stringify({
+  //      amount: totalAmount,
+  //      message: description
+  //    })
+  //  });
+
   async function createSwishPayment(totalAmount, description) {
-    const resp = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors',
-      body: JSON.stringify({
-        amount: totalAmount,
-        message: description
-      })
-    });
+  const amountStr = Number(totalAmount).toFixed(2); // "650.00"
+
+  const resp = await fetch(BACKEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    mode: 'cors',
+    body: JSON.stringify({
+      amount: amountStr,
+      message: description
+    })
+  });
+
+  const data = await resp.json();
+  if (!resp.ok || !data?.deeplink) {
+    throw new Error(data?.error || 'Okänt fel');
+  }
+  return data.deeplink;
+}
+
 
     const data = await resp.json();
     if (!resp.ok || !data?.deeplink) {
