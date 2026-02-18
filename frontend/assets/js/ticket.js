@@ -121,48 +121,64 @@ document.addEventListener('DOMContentLoaded', () => {
 async function createSwishPayment(totalAmount, description) {
   const amountStr = Number(totalAmount).toFixed(2);
 
-  const resp = await fetch(BACKEND_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    mode: 'cors',
-    body: JSON.stringify({ amount: amountStr, message: description })
-  });
+  let resp;
+  try {
+    resp = await fetch(BACKEND_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      body: JSON.stringify({
+        amount: amountStr,
+        message: description
+      })
+    });
+  } catch (e) {
+    // Network / CORS / DNS errors
+    throw new Error(`Nätverksfel / CORS: ${e.message}`);
+  }
 
   const text = await resp.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch {}
-
-  if (!resp.ok) throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}`);
-  if (!data?.deeplink || !data?.token) throw new Error('Saknar deeplink/token i svar');
-
-  return { deeplink: data.deeplink, token: data.token };
-}
-
-  const text = await resp.text();   // ✅ safer than resp.json() first
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch {}
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    // ignore JSON parse errors
+  }
 
   if (!resp.ok) {
-    throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}: ${text}`);
-  }
-  if (!data?.deeplink) {
-    throw new Error(`Saknar deeplink i svar: ${text}`);
+    throw new Error(
+      (data && (data.details || data.error)) ||
+      `HTTP ${resp.status}: ${text}`
+    );
   }
 
-  return { deeplink: data.deeplink, token: data.token };
+  if (!data?.deeplink || !data?.token) {
+    throw new Error('Saknar deeplink eller token i Swish-svar');
+  }
+
+  return {
+    deeplink: data.deeplink,
+    token: data.token
+  };
 }
 
 function setQrForToken(token) {
   if (!qrImg) return;
 
+  // Remove responsive image overrides
   qrImg.removeAttribute('srcset');
   qrImg.removeAttribute('sizes');
 
-  const payload = `CPC?token=${token}`; // ✅ Swish scanner-friendly
+  // Swish scanner-compatible payload
+  const payload = `CPC?token=${token}`;
+
   qrImg.src =
-    'https://api.qrserver.com/v1/create-qr-code/?size=420x420&ecc=H&margin=2&data=' +
-    encodeURIComponent(payload) +
-    '&_=' + Date.now();
+    'https://api.qrserver.com/v1/create-qr-code/' +
+    '?size=420x420' +
+    '&ecc=H' +
+    '&margin=2' +
+    '&data=' + encodeURIComponent(payload) +
+    '&_=' + Date.now(); // cache-buster
 }
 
   // Stepper events
