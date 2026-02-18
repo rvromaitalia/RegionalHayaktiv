@@ -359,12 +359,7 @@
                   <li>Belopp: <strong><span id="amountOut">0</span> kr</strong></li>
                   <li>Meddelande: <strong><span id="messageOut">Vardan Petrosyan</span></strong></li>
                 </ol>
-
-                <img class="swish-qr" src="./frontend/images/swish-qr-720.png" srcset="./frontend/images/swish-qr-480.png 480w,
-                                    ./frontend/images/swish-qr-720.png 720w,
-                                    ./frontend/images/swish-qr-1080.png 1080w"
-                  sizes="(max-width: 600px) 90vw, 360px" alt="Swish QR-kod" loading="lazy" decoding="async">
-
+                <img id="swishQr" class="swish-qr" alt="QR-kod för Swish" loading="lazy" decoding="async">
                 <div class="modal-actions">
                   <a class="btn btn-primary" id="openSwishBtn" href="swish://">Öppna Swish-appen</a>
                   <button class="btn btn-outline" id="closeModal" type="button">Stäng</button>
