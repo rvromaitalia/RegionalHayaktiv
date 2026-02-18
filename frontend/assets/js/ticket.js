@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.getElementById('closeModal');
   const openSwishBtn  = document.getElementById('openSwishBtn');
   //const qrImg         = document.querySelector('.swish-qr');
-  const qrImg = document.querySelector('#swishModal .swish-qr');
+  //const qrImg = document.querySelector('#swishModal .swish-qr');
+  const qrImg = document.getElementById('swishQr'); // instead of querySelector('.swish-qr'
 
   const nameInput     = form?.querySelector('input[name="name"]');
   const amountOut     = document.getElementById('amountOut');
@@ -151,11 +152,18 @@ async function createSwishPayment(totalAmount, description) {
 }
 
   function setQrForDeepLink(deeplink) {
-    if (!qrImg) return;
-    qrImg.src =
-      'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' +
-      encodeURIComponent(deeplink);
-  }
+  if (!qrImg) return;
+
+  // stop responsive images from overriding your dynamic QR
+  qrImg.removeAttribute('srcset');
+  qrImg.removeAttribute('sizes');
+
+  // cache-bust so you never get an old QR image
+  qrImg.src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' +
+    encodeURIComponent(deeplink) +
+    '&_=' + Date.now();
+}
 
   // Stepper events
   form?.addEventListener('click', (e) => {
