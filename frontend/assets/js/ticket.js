@@ -151,12 +151,16 @@ async function createSwishPayment(totalAmount, description) {
   return data.deeplink;
 }
 
-async function setQrForDeepLink(deeplink) {
+function setQrForDeepLink(deeplink) {
   if (!qrImg) return;
+
   qrImg.removeAttribute('srcset');
   qrImg.removeAttribute('sizes');
 
-  qrImg.src = await QRCode.toDataURL(deeplink, { width: 360, margin: 1 });
+  qrImg.src =
+    'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' +
+    encodeURIComponent(deeplink) +
+    '&_=' + Date.now();
 }
 
   // Stepper events
@@ -231,13 +235,13 @@ async function setQrForDeepLink(deeplink) {
         window.location.href = deeplink;
 
         const t = setTimeout(() => {
-          setQrForDeepLink(deeplink);
+          await setQrForDeepLink(deeplink);
           openModal();
         }, 2500);
 
         window.addEventListener('blur', () => clearTimeout(t), { once: true });
       } else {
-        setQrForDeepLink(deeplink);
+        await setQrForDeepLink(deeplink);
         openModal();
       }
     } catch (err) {
