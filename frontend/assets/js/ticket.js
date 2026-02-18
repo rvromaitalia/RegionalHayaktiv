@@ -151,18 +151,12 @@ async function createSwishPayment(totalAmount, description) {
   return data.deeplink;
 }
 
-  function setQrForDeepLink(deeplink) {
+async function setQrForDeepLink(deeplink) {
   if (!qrImg) return;
-
-  // stop responsive images from overriding your dynamic QR
   qrImg.removeAttribute('srcset');
   qrImg.removeAttribute('sizes');
 
-  // cache-bust so you never get an old QR image
-  qrImg.src =
-    'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' +
-    encodeURIComponent(deeplink) +
-    '&_=' + Date.now();
+  qrImg.src = await QRCode.toDataURL(deeplink, { width: 360, margin: 1 });
 }
 
   // Stepper events
