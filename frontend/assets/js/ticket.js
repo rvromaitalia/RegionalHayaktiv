@@ -150,24 +150,6 @@ async function createSwishPayment(totalAmount, description) {
   return data.deeplink;
 }
 
-
-
-  const data = await resp.json();
-  if (!resp.ok || !data?.deeplink) {
-    throw new Error(data?.error || 'Okänt fel');
-  }
-  return data.deeplink;
-}
-
-
-    const data = await resp.json();
-    if (!resp.ok || !data?.deeplink) {
-      const reason = data?.error || 'Okänt fel';
-      throw new Error(reason);
-    }
-    return data.deeplink;
-  }
-
   function setQrForDeepLink(deeplink) {
     if (!qrImg) return;
     qrImg.src =
