@@ -5,13 +5,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const modal         = document.getElementById('swishModal');
   const closeModalBtn = document.getElementById('closeModal');
   const openSwishBtn  = document.getElementById('openSwishBtn');
-  //const qrImg         = document.querySelector('.swish-qr');
-  //const qrImg = document.querySelector('#swishModal .swish-qr');
-  const qrImg = document.getElementById('swishQr'); // instead of querySelector('.swish-qr'
 
-  const nameInput     = form?.querySelector('input[name="name"]');
-  const amountOut     = document.getElementById('amountOut');
-  const messageOut    = document.getElementById('messageOut');
+  // Modal QR image ONLY (must exist in modal HTML)
+  const qrImg = document.getElementById('swishQr');
+
+  const nameInput  = form?.querySelector('input[name="name"]');
+  const amountOut  = document.getElementById('amountOut');
+  const messageOut = document.getElementById('messageOut');
 
   // Hidden fields (Formspree)
   const hOrd  = document.getElementById('qty_ordinarie');
@@ -22,13 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const EVENT_LABEL = 'Akop Jan';
 
+  // Mobile uses commerce payment request -> deeplink
   const BACKEND_URL = 'https://api.regionalhayaktiv.org/api/swish/create';
-  const BACKEND_URL_BASE = "https://api.regionalhayaktiv.org";
-  //const BACKEND_URL = 'http://localhost:3000/api/swish/create';
 
-  const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(
-    navigator.userAgent
-  );
+  // Desktop uses prefilled QR generator endpoint
+  const BACKEND_URL_BASE = 'https://api.regionalhayaktiv.org';
+
+  const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
 
   const formatSEK = (n) => new Intl.NumberFormat('sv-SE').format(n);
 
@@ -55,24 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     for (const row of rows) {
-      const type = row.getAttribute('data-type');
+      const type  = row.getAttribute('data-type');
       const price = Number(row.getAttribute('data-price') || 0);
 
       const input = row.querySelector('.qty-input');
-      const qty = clampInt(input?.value ?? 0, 0, 99);
+      const qty   = clampInt(input?.value ?? 0, 0, 99);
 
       if (input && String(qty) !== String(input.value)) input.value = String(qty);
 
       if (type === 'ordinarie') result.ordinarie = qty;
-      if (type === 'ungdom') result.ungdom = qty;
-      if (type === 'barn') result.barn = qty;
+      if (type === 'ungdom')    result.ungdom = qty;
+      if (type === 'barn')      result.barn = qty;
 
       result.totalQty += qty;
       result.totalAmount += qty * price;
 
       if (qty > 0) {
-        const label =
-          row.querySelector('.ticket-name')?.textContent?.trim() || type;
+        const label = row.querySelector('.ticket-name')?.textContent?.trim() || type;
         result.breakdownText.push(`${label} x${qty}`);
       }
     }
@@ -95,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (amountOut) amountOut.textContent = formatSEK(sel.totalAmount);
 
     if (messageOut) {
-      const name = (nameInput?.value || '').trim();
+      const name  = (nameInput?.value || '').trim();
       const lines = sel.breakdownText.length ? sel.breakdownText.join(', ') : 'Inga biljetter valda';
       messageOut.textContent = name
         ? `${name} – ${EVENT_LABEL} (${lines})`
@@ -108,97 +107,61 @@ document.addEventListener('DOMContentLoaded', () => {
   function openModal()  { updateOutputs(); modal?.removeAttribute('hidden'); }
   function closeModal() { modal?.setAttribute('hidden', ''); }
 
-  //async function createSwishPayment(totalAmount, description) {
-  //  const resp = await fetch(BACKEND_URL, {
-  //    method: 'POST',
-  //    headers: { 'Content-Type': 'application/json' },
-  //    mode: 'cors',
-  //    body: JSON.stringify({
-  //      amount: totalAmount,
-  //      message: description
-  //    })
-  //  });
-
-async function createSwishPayment(totalAmount, description) {
-  const amountStr = Number(totalAmount).toFixed(2);
-
-  let resp;
-  try {
-    resp = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors',
-      body: JSON.stringify({
-        amount: amountStr,
-        message: description
-      })
-    });
-  } catch (e) {
-    // Network / CORS / DNS errors
-    throw new Error(`Nätverksfel / CORS: ${e.message}`);
-  }
-
+  // ---- Desktop only: fetch prefilled QR PNG from backend and show it ----
   async function fetchPrefilledQrPng(amountNumber, message) {
-  const resp = await fetch(`${BACKEND_URL_BASE}/api/swish/qr/prefilled`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    mode: "cors",
-    body: JSON.stringify({ amount: amountNumber, message }),
-  });
+    let resp;
+    try {
+      resp = await fetch(`${BACKEND_URL_BASE}/api/swish/qr/prefilled`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'cors',
+        body: JSON.stringify({
+          amount: Number(amountNumber),
+          message: String(message || '').slice(0, 50)
+        })
+      });
+    } catch (e) {
+      throw new Error(`Nätverksfel / CORS: ${e.message}`);
+    }
 
-  if (!resp.ok) {
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`QR error HTTP ${resp.status}: ${text}`);
+    }
+
+    const blob = await resp.blob();
+    return URL.createObjectURL(blob);
+  }
+
+  // ---- Mobile: create Swish payment request -> deeplink ----
+  async function createSwishPayment(totalAmount, description) {
+    const amountStr = Number(totalAmount).toFixed(2);
+
+    let resp;
+    try {
+      resp = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        mode: 'cors',
+        body: JSON.stringify({ amount: amountStr, message: description })
+      });
+    } catch (e) {
+      throw new Error(`Nätverksfel / CORS: ${e.message}`);
+    }
+
     const text = await resp.text();
-    throw new Error(`QR error HTTP ${resp.status}: ${text}`);
+    let data = null;
+    try { data = text ? JSON.parse(text) : null; } catch {}
+
+    if (!resp.ok) {
+      throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}: ${text}`);
+    }
+    if (!data?.deeplink) {
+      throw new Error('Saknar deeplink i Swish-svar');
+    }
+
+    return { deeplink: data.deeplink };
   }
-
-  const blob = await resp.blob();
-  return URL.createObjectURL(blob);
-}
-
-
-  const text = await resp.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    // ignore JSON parse errors
-  }
-
-  if (!resp.ok) {
-    throw new Error(
-      (data && (data.details || data.error)) ||
-      `HTTP ${resp.status}: ${text}`
-    );
-  }
-
-  if (!data?.deeplink || !data?.token) {
-    throw new Error('Saknar deeplink eller token i Swish-svar');
-  }
-
-  return {
-    deeplink: data.deeplink,
-    token: data.token
-  };
-}
-
-function setQrForToken(token) {
-  if (!qrImg) return;
-
-  // Remove responsive image overrides
-  qrImg.removeAttribute('srcset');
-  qrImg.removeAttribute('sizes');
-
-  // Swish scanner-compatible payload
-  const payload = `CPC?token=${token}`;
-
-  qrImg.src =
-    'https://api.qrserver.com/v1/create-qr-code/' +
-    '?size=420x420' +
-    '&ecc=H' +
-    '&margin=2' +
-    '&data=' + encodeURIComponent(payload) +
-    '&_=' + Date.now(); // cache-buster
-}
 
   // Stepper events
   form?.addEventListener('click', (e) => {
@@ -229,16 +192,10 @@ function setQrForToken(token) {
   if (buyBtn) buyBtn.disabled = false;
 
   // Desktop: disable openSwishBtn
-  if (!isMobile) {
-    const qrUrl = await fetchPrefilledQrPng(sel.totalAmount, description);
-  
-    // ensure modal QR image is the one you update
-    qrImg.removeAttribute("srcset");
-    qrImg.removeAttribute("sizes");
-    qrImg.src = qrUrl;
-  
-    openModal();
-    return;
+  if (!isMobile && openSwishBtn) {
+    openSwishBtn.setAttribute('aria-disabled', 'true');
+    openSwishBtn.setAttribute('tabindex', '-1');
+    openSwishBtn.addEventListener('click', (e) => e.preventDefault());
   }
 
   buyBtn?.addEventListener('click', async (e) => {
@@ -261,31 +218,54 @@ function setQrForToken(token) {
       return;
     }
 
-    const descName = (nameInput?.value || '').trim();
-    const breakdown = sel.breakdownText.join(', ');
+    const descName   = (nameInput?.value || '').trim();
+    const breakdown  = sel.breakdownText.join(', ');
     const description =
       `${descName ? descName + ' – ' : ''}${EVENT_LABEL}: ${breakdown}`;
 
     try {
-      const { deeplink, token } = await createSwishPayment(sel.totalAmount, description);
-      if (isMobile && openSwishBtn) {
+      // ✅ Desktop: Prefilled QR only
+      if (!isMobile) {
+        const qrUrl = await fetchPrefilledQrPng(sel.totalAmount, description);
+
+        if (qrImg) {
+          qrImg.removeAttribute('srcset');
+          qrImg.removeAttribute('sizes');
+          qrImg.src = qrUrl;
+        }
+
+        openModal();
+        return;
+      }
+
+      // ✅ Mobile: Deeplink payment request flow
+      const { deeplink } = await createSwishPayment(sel.totalAmount, description);
+
+      if (openSwishBtn) {
         openSwishBtn.href = deeplink;
         openSwishBtn.style.display = 'inline-block';
       }
 
-      if (isMobile) {
-        window.location.href = deeplink;
+      window.location.href = deeplink;
 
-        const t = setTimeout(() => {
-          setQrForToken(token);
-          openModal();
-        }, 2500);
+      // Optional mobile fallback: show QR after delay if user returns
+      const t = setTimeout(() => {
+        // For mobile fallback we can also show prefilled QR
+        // (or keep it empty). This uses the same desktop prefilled QR.
+        fetchPrefilledQrPng(sel.totalAmount, description)
+          .then((qrUrl) => {
+            if (qrImg) {
+              qrImg.removeAttribute('srcset');
+              qrImg.removeAttribute('sizes');
+              qrImg.src = qrUrl;
+            }
+            openModal();
+          })
+          .catch(() => {});
+      }, 2500);
 
-        window.addEventListener('blur', () => clearTimeout(t), { once: true });
-      } else {
-        setQrForToken(token);
-        openModal();
-      }
+      window.addEventListener('blur', () => clearTimeout(t), { once: true });
+
     } catch (err) {
       console.error(err);
       alert(`Kunde inte skapa Swish-betalning: ${err.message}`);
