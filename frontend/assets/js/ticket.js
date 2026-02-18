@@ -119,23 +119,24 @@ document.addEventListener('DOMContentLoaded', () => {
   //  });
 
 async function createSwishPayment(totalAmount, description) {
-  const amountStr = Number(totalAmount).toFixed(2); // "650.00"
+  const amountStr = Number(totalAmount).toFixed(2);
 
-  let resp;
-  try {
-    resp = await fetch(BACKEND_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      mode: 'cors',
-      body: JSON.stringify({
-        amount: amountStr,          // ✅ changed
-        message: description
-      })
-    });
-  } catch (e) {
-    // This is what you get on CORS / network errors
-    throw new Error(`Nätverksfel/CORS: ${e.message}`);
-  }
+  const resp = await fetch(BACKEND_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    mode: 'cors',
+    body: JSON.stringify({ amount: amountStr, message: description })
+  });
+
+  const text = await resp.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+
+  if (!resp.ok) throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}`);
+  if (!data?.deeplink || !data?.token) throw new Error('Saknar deeplink/token i svar');
+
+  return { deeplink: data.deeplink, token: data.token };
+}
 
   const text = await resp.text();   // ✅ safer than resp.json() first
   let data = null;
@@ -148,18 +149,19 @@ async function createSwishPayment(totalAmount, description) {
     throw new Error(`Saknar deeplink i svar: ${text}`);
   }
 
-  return data.deeplink;
+  return { deeplink: data.deeplink, token: data.token };
 }
 
-function setQrForDeepLink(deeplink) {
+function setQrForToken(token) {
   if (!qrImg) return;
 
   qrImg.removeAttribute('srcset');
   qrImg.removeAttribute('sizes');
 
+  const payload = `CPC?token=${token}`; // ✅ Swish scanner-friendly
   qrImg.src =
-    'https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=' +
-    encodeURIComponent(deeplink) +
+    'https://api.qrserver.com/v1/create-qr-code/?size=420x420&ecc=H&margin=2&data=' +
+    encodeURIComponent(payload) +
     '&_=' + Date.now();
 }
 
@@ -224,8 +226,7 @@ function setQrForDeepLink(deeplink) {
       `${descName ? descName + ' – ' : ''}${EVENT_LABEL}: ${breakdown}`;
 
     try {
-      const deeplink = await createSwishPayment(sel.totalAmount, description);
-
+      const { deeplink, token } = await createSwishPayment(sel.totalAmount, description);
       if (isMobile && openSwishBtn) {
         openSwishBtn.href = deeplink;
         openSwishBtn.style.display = 'inline-block';
@@ -235,14 +236,13 @@ function setQrForDeepLink(deeplink) {
         window.location.href = deeplink;
 
         const t = setTimeout(() => {
-          setQrForDeepLink(deeplink);
+          setQrForToken(token);
           openModal();
         }, 2500);
 
         window.addEventListener('blur', () => clearTimeout(t), { once: true });
       } else {
-        setQrForDeepLink(deeplink);
-        openModal();
+        setQrForToken(token);
         openModal();
       }
     } catch (err) {
