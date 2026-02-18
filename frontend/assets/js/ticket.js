@@ -234,14 +234,15 @@ function setQrForDeepLink(deeplink) {
       if (isMobile) {
         window.location.href = deeplink;
 
-        const t = setTimeout(async () => {
-          await setQrForDeepLink(deeplink);
+        const t = setTimeout(() => {
+          setQrForDeepLink(deeplink);
           openModal();
         }, 2500);
 
         window.addEventListener('blur', () => clearTimeout(t), { once: true });
       } else {
-        await setQrForDeepLink(deeplink);
+        setQrForDeepLink(deeplink);
+        openModal();
         openModal();
       }
     } catch (err) {
