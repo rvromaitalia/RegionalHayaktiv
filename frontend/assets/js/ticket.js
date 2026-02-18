@@ -117,18 +117,31 @@ document.addEventListener('DOMContentLoaded', () => {
   //    })
   //  });
 
-  async function createSwishPayment(totalAmount, description) {
-  const amountStr = Number(totalAmount).toFixed(2); // "650.00"
+async function createSwishPayment(totalAmount, description) {
+  const amountStr = Number(totalAmount).toFixed(2);
 
   const resp = await fetch(BACKEND_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     mode: 'cors',
-    body: JSON.stringify({
-      amount: amountStr,
-      message: description
-    })
+    body: JSON.stringify({ amount: amountStr, message: description })
   });
+
+  const text = await resp.text(); // read raw first
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch {}
+
+  if (!resp.ok) {
+    console.error('Swish create failed:', resp.status, data || text);
+    throw new Error((data && (data.details || data.error)) || `HTTP ${resp.status}`);
+  }
+  if (!data?.deeplink) {
+    console.error('No deeplink in response:', data);
+    throw new Error('No deeplink returned');
+  }
+  return data.deeplink;
+}
+
 
   const data = await resp.json();
   if (!resp.ok || !data?.deeplink) {
