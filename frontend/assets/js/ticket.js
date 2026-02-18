@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const EVENT_LABEL = 'Akop Jan';
 
   const BACKEND_URL = 'https://api.regionalhayaktiv.org/api/swish/create';
+  const BACKEND_URL_BASE = "https://api.regionalhayaktiv.org";
   //const BACKEND_URL = 'http://localhost:3000/api/swish/create';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(
@@ -137,6 +138,24 @@ async function createSwishPayment(totalAmount, description) {
     throw new Error(`Nätverksfel / CORS: ${e.message}`);
   }
 
+  async function fetchPrefilledQrPng(amountNumber, message) {
+  const resp = await fetch(`${BACKEND_URL_BASE}/api/swish/qr/prefilled`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    mode: "cors",
+    body: JSON.stringify({ amount: amountNumber, message }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`QR error HTTP ${resp.status}: ${text}`);
+  }
+
+  const blob = await resp.blob();
+  return URL.createObjectURL(blob);
+}
+
+
   const text = await resp.text();
   let data = null;
   try {
@@ -210,10 +229,16 @@ function setQrForToken(token) {
   if (buyBtn) buyBtn.disabled = false;
 
   // Desktop: disable openSwishBtn
-  if (!isMobile && openSwishBtn) {
-    openSwishBtn.setAttribute('aria-disabled', 'true');
-    openSwishBtn.setAttribute('tabindex', '-1');
-    openSwishBtn.addEventListener('click', (e) => e.preventDefault());
+  if (!isMobile) {
+    const qrUrl = await fetchPrefilledQrPng(sel.totalAmount, description);
+  
+    // ensure modal QR image is the one you update
+    qrImg.removeAttribute("srcset");
+    qrImg.removeAttribute("sizes");
+    qrImg.src = qrUrl;
+  
+    openModal();
+    return;
   }
 
   buyBtn?.addEventListener('click', async (e) => {
