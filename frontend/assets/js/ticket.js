@@ -23,10 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const EVENT_LABEL = 'Akop Jan';
 
   // Mobile uses commerce payment request -> deeplink
-  const BACKEND_URL = 'https://api.regionalhayaktiv.org/api/swish/create';
+  //For desktop url
+  //const BACKEND_URL = 'https://api.regionalhayaktiv.org/api/swish/create';
+ 
+  //For mobile server version
+  const BACKEND_URL = 'https://swish-phone.regionalhayaktiv.org/api/swish/create';
 
   // Desktop uses prefilled QR generator endpoint
-  const BACKEND_URL_BASE = 'https://api.regionalhayaktiv.org';
+  //For desktop server
+  //const BACKEND_URL_BASE = 'https://api.regionalhayaktiv.org';
+
+  //For mobile server version
+  const BACKEND_URL_BASE = 'https://swish-phone.regionalhayaktiv.org';
 
   const isMobile = /android|iphone|ipad|ipod|windows phone/i.test(navigator.userAgent);
 
