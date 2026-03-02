@@ -74,3 +74,8 @@ target/
 # OS cruft
 .DS_Store
 Thumbs.db
+
+#Certificates
+*.p12
+*.pem
+*.key
