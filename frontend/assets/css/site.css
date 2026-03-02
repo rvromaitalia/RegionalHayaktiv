@@ -168,6 +168,19 @@ html { scroll-behavior:smooth; }
   border-radius: 10px;
 }
 
+.admin-btn{
+  padding: .35rem .7rem;
+  border: 1px solid #111;
+  background: transparent;
+  border-radius: .4rem;
+  font-size: .875rem;
+  cursor: pointer;
+}
+.admin-btn:hover{
+  background: #111;
+  color: #fff;
+}
+
 .nav a{ text-decoration:none; color: #111827; font-weight:600; padding:.5rem .75rem; border-radius:10px; }
 .nav a:hover, .nav a:focus-visible{ background: #f2f4f7; outline:2px solid transparent; }
 
