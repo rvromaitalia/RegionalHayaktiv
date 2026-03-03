@@ -479,6 +479,39 @@
       document.getElementById('year').textContent = new Date().getFullYear();
     </script>
   </div>
+  <!--- Admin login modal-->
+  <!-- Admin Login Modal (no Bootstrap JS required) -->
+  <div id="adminModal" class="rh-modal" hidden aria-hidden="true">
+    <div class="rh-modal-backdrop" data-close="1"></div>
+
+    <div class="rh-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+      <div class="rh-modal-header">
+        <h3 id="adminModalTitle">Admin login</h3>
+        <button type="button" class="rh-modal-close" aria-label="Stäng" data-close="1">×</button>
+      </div>
+
+      <form id="adminLoginForm" class="rh-modal-body">
+        <label class="rh-field">
+          <span>Användarnamn</span>
+          <input name="username" autocomplete="username" required />
+        </label>
+
+        <label class="rh-field">
+          <span>Lösenord</span>
+          <input name="password" type="password" autocomplete="current-password" required />
+        </label>
+
+        <p id="adminLoginError" class="rh-error" hidden></p>
+
+        <div class="rh-modal-actions">
+          <button type="submit" class="rh-primary">Logga in</button>
+          <button type="button" class="rh-secondary" data-close="1">Avbryt</button>
+        </div>
+      </form>
+    </div>
+    <!-- Admin JS -->
+    <script src="./frontend/assets/js/admin.js" defer></script>
+  </div>
 </body>
 
 </html>
